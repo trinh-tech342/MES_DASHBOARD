@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MES PRO | Advanced Manufacturing System</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="container">
+        <header class="main-header">
+            <div class="logo">⚡ MES<span>PRO</span></div>
+            <div class="status-workflow">
+                <span id="badge-supervisor" class="badge active">QUẢN ĐỐC</span>
+                <span class="connector"></span>
+                <span id="badge-operator" class="badge">SẢN XUẤT</span>
+                <span class="connector"></span>
+                <span id="badge-qc" class="badge">KIỂM ĐỊNH</span>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <section class="glass-card section-1">
+                <div class="card-head">
+                    <span class="step-num">01</span>
+                    <h3>Khởi tạo Lô & Đơn hàng</h3>
+                </div>
+                <div class="input-row">
+                    <div class="field">
+                        <label>Mã số Lô</label>
+                        <input type="text" id="batchId" placeholder="BATCH-2026-001">
+                    </div>
+                    <div class="field">
+                        <label>Mã Đơn hàng</label>
+                        <input type="text" id="orderId" placeholder="ORD-9921">
+                    </div>
+                </div>
+                <div class="field mt-10">
+                    <label>Sản phẩm (SKU)</label>
+                    <input type="text" id="skuId" placeholder="Tên sản phẩm / SKU">
+                </div>
+                <button onclick="initBatch()" class="btn-glow primary">KÍCH HOẠT HỒ SƠ</button>
+            </section>
+
+            <section class="glass-card section-2">
+                <div class="card-head">
+                    <span class="step-num">02</span>
+                    <h3>Nhật ký Vận hành & Sản xuất</h3>
+                </div>
+                <div class="selection-group">
+                    <select id="activeBatches" onchange="loadBatchData(this.value)">
+                        <option value="">-- CHỌN LÔ ĐANG VẬN HÀNH --</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>CÔNG ĐOẠN</th>
+                                <th>NGUYÊN LIỆU</th>
+                                <th>LÔ RM</th>
+                                <th>INPUT</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="outputBody"></tbody>
+                    </table>
+                </div>
+                <div class="card-actions">
+                    <button onclick="addRow('outputBody')" class="btn-outline">+ THÊM DÒNG</button>
+                    <button onclick="saveProduction()" class="btn-glow orange">LƯU DỮ LIỆU</button>
+                </div>
+            </section>
+
+            <section class="glass-card section-3">
+                <div class="card-head">
+                    <span class="step-num">03</span>
+                    <h3>Kiểm định Chất lượng (QC)</h3>
+                </div>
+                <div class="qc-grid">
+                    <select id="pqcStatus" class="minimal-select">
+                        <option value="Pending">🕒 CHỜ KIỂM TRA</option>
+                        <option value="Pass">✅ ĐẠT (PASS)</option>
+                        <option value="Fail">❌ LỖI (FAIL)</option>
+                    </select>
+                    <textarea id="qcNote" placeholder="Ghi chú thẩm định..."></textarea>
+                </div>
+                <button onclick="finalizeQC()" class="btn-glow success">XÁC NHẬN HOÀN THÀNH</button>
+            </section>
+
+            <section class="glass-card section-pdf">
+                <div class="card-head">
+                    <h3>Truy xuất & In Hồ sơ</h3>
+                </div>
+                <div class="search-flex">
+                    <input type="text" id="searchId" placeholder="Nhập Batch ID...">
+                    <button onclick="exportBatchPDF()" class="btn-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        TẢI PDF
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.autotable.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

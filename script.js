@@ -1,12 +1,20 @@
+
+// Khai báo db ở đầu file
+let db = []; 
+
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZi4_9BUts0mJDeP4g8huVWREki0__EGVFjoN9DyvOMkFz8BVWQHoBft00gg5Uu38vOg/exec";
 
-// 1. QUẢN ĐỐC KHỞI TẠO (Ghi vào sheet INPUT)
-async function initBatch() {
+// Định nghĩa hàm rõ ràng
+window.initBatch = async function() {
+    console.log("Đang khởi tạo lô..."); // Dòng này để kiểm tra trong Console
     const batchId = document.getElementById('batchId').value;
     const orderId = document.getElementById('orderId').value;
     const skuId = document.getElementById('skuId').value;
 
-    if(!batchId) return alert("Thiếu Batch ID!");
+    if(!batchId) {
+        alert("Thiếu Batch ID!");
+        return;
+    }
 
     const payload = {
         action: 'init',
@@ -15,46 +23,143 @@ async function initBatch() {
         skuId: skuId
     };
 
-    const success = await sendToDatabase(payload);
-    if(success) {
-        db.push({...payload, status: 'Created', outputLogs: []});
+    // Thêm vào db cục bộ
+    db.push({...payload, status: 'Created', outputLogs: []});
+    
+    // Gọi hàm cập nhật giao diện
+    if (typeof updateBatchSelector === "function") {
         updateBatchSelector();
-        alert("✅ Quản đốc đã khởi tạo Lô thành công!");
+    }
+
+    alert("✅ Khởi tạo thành công lô: " + batchId);
+    
+    // Gửi đi
+    await sendToDatabase(payload);
+};
+
+// Đảm bảo hàm sendToDatabase cũng tồn tại
+async function sendToDatabase(payload) {
+    try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify(payload)
+        });
+        return true;
+    } catch (e) {
+        console.error(e);
+        return false;
     }
 }
 
-// 2. SẢN XUẤT CẬP NHẬT (Ghi vào sheet OUTPUT)
+// Cần định nghĩa thêm hàm này để không bị lỗi khi gọi ở trên
+window.updateBatchSelector = function() {
+    const selector = document.getElementById('activeBatches');
+    if(!selector) return;
+    selector.innerHTML = '<option value="">-- CHỌN LÔ ĐANG VẬN HÀNH --</option>';
+    db.forEach(batch => {
+        const opt = document.createElement('option');
+        opt.value = batch.batchId;
+        opt.textContent = batch.batchId;
+        selector.appendChild(opt);
+    });
+};
+// --- CÁC HÀM UI BỔ TRỢ ---
+
+function updateBatchSelector() {
+    const selector = document.getElementById('activeBatches');
+    selector.innerHTML = '<option value="">-- CHỌN LÔ ĐANG VẬN HÀNH --</option>';
+    db.forEach(batch => {
+        const opt = document.createElement('option');
+        opt.value = batch.batchId;
+        opt.textContent = `${batch.batchId} - ${batch.skuId}`;
+        selector.appendChild(opt);
+    });
+}
+
+function updateBadgeStatus(batch) {
+    // Reset all badges
+    document.querySelectorAll('.badge').forEach(b => b.classList.remove('active'));
+    
+    if (batch.status === 'Created') {
+        document.getElementById('badge-supervisor').classList.add('active');
+    } else if (batch.status === 'Produced') {
+        document.getElementById('badge-operator').classList.add('active');
+    } else if (batch.status === 'Completed') {
+        document.getElementById('badge-qc').classList.add('active');
+    }
+}
+
+// Load dữ liệu khi chọn lô từ dropdown
+function loadBatchData(batchId) {
+    const batch = db.find(b => b.batchId === batchId);
+    if (!batch) return;
+    
+    updateBadgeStatus(batch);
+    const tbody = document.getElementById('outputBody');
+    tbody.innerHTML = ''; // Clear table
+    
+    // Nếu lô này đã có dữ liệu sản xuất trước đó, có thể render lại ở đây
+}
+
+// --- CÁC HÀM CHÍNH ---
+
+// 1. QUẢN ĐỐC KHỞI TẠO
+async function initBatch() {
+    const batchId = document.getElementById('batch_id').value;
+    const orderId = document.getElementById('order_id').value;
+    const skuId = document.getElementById('sku_id').value;
+
+    if(!batchId || !skuId) return alert("Vui lòng nhập đầy đủ thông tin!");
+
+    const payload = {
+        action: 'init',
+        batchId: batchId,
+        orderId: orderId,
+        skuId: skuId
+    };
+
+    // Lưu vào bộ nhớ tạm trước để UI mượt mà
+    db.push({...payload, status: 'Created', outputLogs: []});
+    updateBatchSelector();
+    
+    await sendToDatabase(payload);
+    alert("✅ Quản đốc đã khởi tạo Lô thành công!");
+}
+
+// Thêm dòng mới vào bảng
+function addRow(target) {
+    const tbody = document.getElementById(target);
+    const row = document.createElement('tr');
+    // Cập nhật lại HTML row để khớp với tiêu đề bảng của bạn
+    row.innerHTML = `
+        <td><input type="text" class="c-step" placeholder="Công đoạn"></td>
+        <td><input type="text" class="c-rm" placeholder="Nguyên liệu"></td>
+        <td><input type="text" class="c-lot" placeholder="Lô RM"></td>
+        <td><input type="number" class="c-out" placeholder="Số lượng"></td>
+        <td><button onclick="this.closest('tr').remove()" style="background:none; border:none; color:#ff453a; cursor:pointer;">✕</button></td>
+    `;
+    tbody.appendChild(row);
+}
+
+// 2. SẢN XUẤT CẬP NHẬT
 async function saveProduction() {
     const bId = document.getElementById('activeBatches').value;
     const batch = db.find(b => b.batchId === bId);
-    if(!batch) return alert("Chọn Batch!");
+    if(!batch) return alert("Vui lòng chọn một Lô để lưu!");
 
     const rows = document.querySelectorAll('#outputBody tr');
-    const now = new Date();
-        function addRow(target) {
-            const tbody = document.getElementById(target);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><input type="text" class="c-d-start" placeholder="Ngày bắt đầu" onfocus="(this.type='date')"></td>
-                <td><input type="text" class="c-t-start" placeholder="Giờ bắt đầu" onfocus="(this.type='time')"></td>
-                <td><input type="number" class="c-out" placeholder="Sản lượng (Out)"></td>
-                <td><input type="text" class="c-note" placeholder="Ghi chú dòng"></td>
-                <td><button onclick="this.closest('tr').remove()" class="btn-del">✕</button></td>
-            `;
-            tbody.appendChild(row);
-        }
     const outputLogs = Array.from(rows).map(r => ({
-        out: r.querySelector('.c-out')?.value || 0,
-        note: r.querySelector('.c-note')?.value || "",
-        timeStart: r.querySelector('.c-t-start')?.value || "",
-        dateStart: r.querySelector('.c-d-start')?.value || "",
-        timeFinish: now.toLocaleTimeString('vi-VN'),
-        dateFinish: now.toLocaleDateString('vi-VN')
+        step: r.querySelector('.c-step')?.value,
+        rm: r.querySelector('.c-rm')?.value,
+        lot: r.querySelector('.c-lot')?.value,
+        out: r.querySelector('.c-out')?.value,
+        timestamp: new Date().toLocaleString('vi-VN')
     }));
 
     const payload = {
         action: 'save',
-        ...batch,
+        batchId: bId,
         outputLogs: outputLogs
     };
 
@@ -62,34 +167,39 @@ async function saveProduction() {
     if(success) {
         batch.status = 'Produced';
         updateBadgeStatus(batch);
-        alert("💾 Đã lưu Nhật ký vào sheet OUTPUT!");
+        alert("💾 Đã lưu Nhật ký sản xuất thành công!");
     }
 }
 
-// 3. QC XÁC NHẬN (Cập nhật trạng thái PQC vào OUTPUT)
+// 3. QC XÁC NHẬN
 async function finalizeQC() {
     const bId = document.getElementById('activeBatches').value;
     const batch = db.find(b => b.batchId === bId);
+    if(!batch) return alert("Chọn lô cần kiểm định!");
     
-    batch.pqcStatus = document.getElementById('pqcStatus').value;
-    batch.qcNote = document.getElementById('qcNote').value;
+    const pqcStatus = document.getElementById('pqcStatus').value;
+    const qcNote = document.getElementById('qcNote').value;
 
     const payload = {
         action: 'finalize',
-        ...batch
+        batchId: bId,
+        pqcStatus: pqcStatus,
+        qcNote: qcNote
     };
 
     const success = await sendToDatabase(payload);
     if(success) {
         batch.status = 'Completed';
         updateBadgeStatus(batch);
-        alert("✅ QC đã chốt hồ sơ và lưu vào OUTPUT!");
+        alert("✅ QC đã chốt hồ sơ thành công!");
     }
 }
 
-// Hàm bổ trợ gửi dữ liệu
+// Hàm gửi dữ liệu
 async function sendToDatabase(payload) {
     try {
+        // Lưu ý: no-cors sẽ không cho phép bạn đọc phản hồi từ Server, 
+        // nhưng dữ liệu vẫn sẽ được gửi đi nếu URL đúng.
         await fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
             mode: "no-cors",
@@ -98,6 +208,7 @@ async function sendToDatabase(payload) {
         });
         return true;
     } catch (e) {
+        console.error("Lỗi:", e);
         alert("Lỗi kết nối database!");
         return false;
     }

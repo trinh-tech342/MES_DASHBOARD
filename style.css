@@ -31,6 +31,18 @@ body {
 .logo { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
 .logo span { color: var(--primary); text-shadow: 0 0 15px var(--primary); }
 
+/* Tạo khoảng cách cho tất cả các nhóm nhập liệu */
+.selection-group, .field-group {
+    margin-top: 25px; /* Tăng khoảng cách này lên để nhìn thoáng hơn */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hoặc chỉ nhắm mục tiêu vào dòng SKU nếu nó đứng một mình */
+#sku-container {
+    margin-top: 25px;
+}
+
 /* Badges Neon Effect */
 .status-workflow { display: flex; align-items: center; gap: 15px; }
 .badge {
@@ -108,3 +120,69 @@ input:focus { outline: none; border-color: var(--primary); background: rgba(255,
 
 .search-flex { display: flex; gap: 15px; }
 .btn-icon { background: white; color: black; border: none; border-radius: 12px; padding: 12px 25px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+/*pqcstatus text*/
+.minimal-select {
+    appearance: none; /* Xóa bỏ icon mặc định của trình duyệt */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    background-color: #ffffff;
+    color: #2c3e50; /* Màu xanh đen cực kỳ dễ đọc */
+    padding: 8px 35px 8px 15px; /* Thêm khoảng trống bên phải cho icon mũi tên */
+    border: 2px solid #dee2e6; /* Viền xám nhạt tinh tế */
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    
+    /* Tạo icon mũi tên xuống bằng hình vẽ thay vì dùng mặc định */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+/* Hiệu ứng khi nhấn vào */
+.minimal-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+}
+
+/* Màu riêng cho từng option để dễ phân biệt khi chọn */
+option[value="Pending"] { color: #856404; }
+option[value="Pass"] { color: #155724; }
+option[value="Fail"] { color: #721c24; }
+/*Phần chữ chọn Lô Đang Vận hành*/
+.selection-group {
+    margin: 15px 0;
+}
+
+#activeBatches {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #2c3e50; /* Màu chữ xanh đen đậm */
+    background-color: #f8f9fa; /* Nền xám cực nhẹ, không bị lóa */
+    border: 2px solid #007bff; /* Viền xanh dương để tạo điểm nhấn */
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* Hiệu ứng khi di chuột vào */
+#activeBatches:hover {
+    background-color: #e9ecef;
+    border-color: #0056b3;
+}
+
+/* Tùy chỉnh các lựa chọn bên trong (chỉ hoạt động trên một số trình duyệt) */
+#activeBatches option {
+    background-color: #ffffff;
+    color: #333;
+    padding: 10px;
+}

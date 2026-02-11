@@ -2,7 +2,7 @@
 // Khai báo db ở đầu file
 let db = []; 
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZi4_9BUts0mJDeP4g8huVWREki0__EGVFjoN9DyvOMkFz8BVWQHoBft00gg5Uu38vOg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRR59TJxarKIlptYAGoN-g-C5BeL1OdeiKNGq8QVsZgiPbUwfjGBTYanCusNNZYjY5/exec";
 
 // Định nghĩa hàm rõ ràng
 window.initBatch = async function() {
@@ -18,9 +18,9 @@ window.initBatch = async function() {
 
     const payload = {
         action: 'init',
-        batchId: batchId,
-        orderId: orderId,
-        skuId: skuId
+        batch_id: batchId,
+        order_id: orderId,
+        sku_id: skuId
     };
 
     // Thêm vào db cục bộ
@@ -106,17 +106,17 @@ function loadBatchData(batchId) {
 
 // 1. QUẢN ĐỐC KHỞI TẠO
 async function initBatch() {
-    const batchId = document.getElementById('batch_id').value;
-    const orderId = document.getElementById('order_id').value;
-    const skuId = document.getElementById('sku_id').value;
+    const batchId = document.getElementById('batchID').value;
+    const orderId = document.getElementById('orderID').value;
+    const skuId = document.getElementById('skuID').value;
 
     if(!batchId || !skuId) return alert("Vui lòng nhập đầy đủ thông tin!");
 
     const payload = {
         action: 'init',
-        batchId: batchId,
-        orderId: orderId,
-        skuId: skuId
+        batch_id: batchId,
+        order_id: orderId,
+        sku_id: skuId
     };
 
     // Lưu vào bộ nhớ tạm trước để UI mượt mà
@@ -159,7 +159,7 @@ async function saveProduction() {
 
     const payload = {
         action: 'save',
-        batchId: bId,
+        batch_id: bId,
         outputLogs: outputLogs
     };
 
@@ -182,9 +182,9 @@ async function finalizeQC() {
 
     const payload = {
         action: 'finalize',
-        batchId: bId,
-        pqcStatus: pqcStatus,
-        qcNote: qcNote
+        batch_id: bId,
+        pqc_status: pqcStatus,
+        note: qcNote
     };
 
     const success = await sendToDatabase(payload);

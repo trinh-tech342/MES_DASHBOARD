@@ -514,3 +514,21 @@ button:disabled {
     font-size: 24px;
     color: #fff;
 }
+/*QUẢN LÝ BOM*/
+.bom-container {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    border: 1px dashed var(--primary);
+}
+.bom-table th {
+    background: rgba(var(--primary-rgb), 0.1);
+    font-size: 11px;
+}
+.bom-note {
+    margin-top: 10px;
+    padding: 8px;
+    border-left: 3px solid #ffcc00;
+    background: rgba(255, 204, 0, 0.1);
+}

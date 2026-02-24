@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MES PRO | Advanced Manufacturing System</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://unpkg.com/html5-qrcode" defer></script>
 </head>
 <body>
     <div class="glass-bg"></div>
+    
     <div class="container">
         <header class="main-header">
             <div class="logo">⚡ MES<span>PRO</span></div>
@@ -21,7 +28,31 @@
             </div>
         </header>
 
-        <main class="dashboard-grid">
+        <section class="dashboard-grid">
+            <div class="dash-card">
+                <div class="dash-icon" style="color: var(--primary);">📦</div>
+                <div class="dash-info">
+                    <span class="dash-label">TỔNG LÔ HÔM NAY</span>
+                    <h2 id="dash-total">0</h2>
+                </div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-icon" style="color: var(--success);">✅</div>
+                <div class="dash-info">
+                    <span class="dash-label">ĐÃ HOÀN THÀNH</span>
+                    <h2 id="dash-completed">0</h2>
+                </div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-icon" style="color: #ffcc00;">🕒</div>
+                <div class="dash-info">
+                    <span class="dash-label">ĐANG SẢN XUẤT</span>
+                    <h2 id="dash-pending">0</h2>
+                </div>
+            </div>
+        </section>
+
+        <main class="sections-wrapper">
             <section class="glass-card section-1">
                 <div class="card-head">
                     <span class="step-num">01</span>
@@ -47,13 +78,18 @@
             <section class="glass-card section-2">
                 <div class="card-head">
                     <span class="step-num">02</span>
-                    <h3>Nhật ký Vận hành & Sản xuất</h3>
+                    <h3>Nhật ký Vận hành</h3>
                 </div>
                 <div class="selection-group">
-                    <select id="activeBatches" onchange="loadBatchData(this.value)">
-                        <option value="">-- CHỌN LÔ ĐANG VẬN HÀNH --</option>
-                    </select>
+                    <label>CHỌN LÔ VẬN HÀNH</label>
+                    <div class="input-with-button">
+                        <select id="activeBatches" onchange="loadBatchData(this.value)">
+                            <option value="">-- CHỌN MÃ LÔ --</option>
+                        </select>
+                        <button onclick="startScan('activeBatches')" class="btn-scan">QUÉT QR</button>
+                    </div>
                 </div>
+
                 <div class="table-wrapper">
                     <table class="luxury-table">
                         <thead>
@@ -61,8 +97,8 @@
                                 <th>CÔNG ĐOẠN</th>
                                 <th>NGUYÊN LIỆU</th>
                                 <th>LÔ RM</th>
-                                <th>INPUT</th>
-                                <th>GHI CHÚ</th>
+                                <th>SẢN LƯỢNG</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody id="outputBody"></tbody>
@@ -77,36 +113,61 @@
             <section class="glass-card section-3">
                 <div class="card-head">
                     <span class="step-num">03</span>
-                    <h3>Kiểm định Chất lượng (QC)</h3>
+                    <h3>Kiểm định Chất lượng</h3>
+                </div>
+                <div class="selection-group">
+                    <select id="qcBatchSelect" onchange="loadQCData(this.value)">
+                        <option value="">-- CHỌN LÔ THẨM ĐỊNH --</option>
+                    </select>
                 </div>
                 <div class="qc-grid">
-                    <select id="pqcStatus" class="minimal-select">
-                        <option value="Pending">🕒 CHỜ KIỂM TRA</option>
-                        <option value="Pass">✅ ĐẠT (PASS)</option>
-                        <option value="Fail">❌ LỖI (FAIL)</option>
-                    </select>
+                    <div class="status-toggle-container">
+                        <span class="status-label fail">LỖI (FAIL)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="pqcToggle" onchange="updateQCStatusText()">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="status-label pass">ĐẠT (PASS)</span>
+                    </div>
+                    <input type="hidden" id="pqcStatus" value="Fail"> 
                     <textarea id="qcNote" placeholder="Ghi chú thẩm định..."></textarea>
                 </div>
                 <button onclick="finalizeQC()" class="btn-glow success">XÁC NHẬN HOÀN THÀNH</button>
             </section>
 
             <section class="glass-card section-pdf">
-                <div class="card-head">
-                    <h3>Truy xuất & In Hồ sơ</h3>
-                </div>
+                <div class="card-head"><h3>Truy xuất & In</h3></div>
                 <div class="search-flex">
                     <input type="text" id="searchId" placeholder="Nhập Batch ID...">
-                    <button onclick="exportBatchPDF()" class="btn-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                        TẢI PDF
-                    </button>
+                    <button onclick="exportBatchPDF()" class="btn-icon">TẢI PDF</button>
                 </div>
             </section>
         </main>
     </div>
+    <div id="confirm-modal" class="camera-modal" style="display: none; background: rgba(0,0,0,0.8);">
+        <div class="glass-card" style="max-width: 320px; text-align: center; padding: 30px;">
+            <div style="font-size: 40px; margin-bottom: 15px;">📷</div>
+            <h3 style="color: white; margin-bottom: 10px;">Yêu cầu Camera</h3>
+            <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 25px;">
+                Hệ thống cần truy cập Camera để quét mã QR vận hành. Bạn có đồng ý kích hoạt không?
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-cancel-cam" class="btn-outline" style="flex: 1;">HỦY</button>
+                <button id="btn-allow-cam" class="btn-glow primary" style="flex: 1;">ĐỒNG Ý</button>
+            </div>
+        </div>
+    </div>
+    <div id="camera-modal" class="camera-modal">
+        <div class="camera-content">
+            <div id="reader"></div>
+            <button onclick="stopScan()" class="btn-glow orange">ĐÓNG CAMERA</button>
+        </div>
+    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.autotable.min.js"></script>
-    <script src="script.js"></script>
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.autotable.min.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 </html>

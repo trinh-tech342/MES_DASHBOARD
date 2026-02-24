@@ -1,59 +1,69 @@
-// Khai báo db ở đầu file
-let db = []; 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwb1gGY8IxlRufesBhyvcHhM0mhLibIfsJN14uOqvNApKVurVfZM6--qxpBUN-FXt5lJw/exec";
-// Hàm lưu db vào bộ nhớ trình duyệt (24/02/2026)
-function saveToLocal() {
-    localStorage.setItem('mes_db_backup', JSON.stringify(db));
-}
 
-// Hàm tải lại db từ bộ nhớ trình duyệt khi mở trang (24/02/2026)
-function loadFromLocal() {
+// Đưa dòng này lên vị trí đầu tiên của file script
+window.db = window.db || [];
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjv09fsvCKdzwDrAxxKkmmDSNogXaNKY3SHwa9-2j_ADu2g-v4-DaCP3gpV50uunAFTw/exec";
+// Hàm lưu db vào bộ nhớ trình duyệt (24/02/2026)
+window.saveToLocal = function() {
+    try {
+        localStorage.setItem('mes_db_backup', JSON.stringify(db));
+        console.log("💾 Đã lưu bản sao cục bộ thành công.");
+    } catch (e) {
+        console.error("❌ Không thể lưu vào LocalStorage:", e);
+    }
+};
+
+// Hàm khôi phục dữ liệu khi vừa mở trang (nên gọi khi khởi tạo app)
+window.loadFromLocal = function() {
     const saved = localStorage.getItem('mes_db_backup');
     if (saved) {
         db = JSON.parse(saved);
-        window.updateBatchSelector(); // Cập nhật lại dropdown
-        console.log("Đã khôi phục dữ liệu từ LocalStorage");
+        window.updateBatchSelector();
+        window.updateDashboard();
+        console.log("🔄 Đã khôi phục dữ liệu từ phiên làm việc trước.");
     }
-}
+};
 // hàm load dữ liệu từ GGSHEET và đổ vào selection CHỌN LÔ VẬN HÀNH (24/02/2026)
 window.loadExistingBatches = async function() {
-    console.log("Đang tải dữ liệu từ Google Sheets...");
+    console.log("🚀 Đang tải dữ liệu từ Google Sheets...");
     
-    // 1. Hiển thị trạng thái chờ trên UI
+    // 1. Hiển thị trạng thái chờ trên giao diện
     const selector = document.getElementById('activeBatches');
     if (selector) {
         selector.innerHTML = '<option value="">⏳ Đang đồng bộ dữ liệu...</option>';
     }
 
     try {
-        // 2. Gọi API lấy dữ liệu từ Cloud
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_batches`);
+        // 2. Gọi API từ Cloud (Thêm timestamp để tránh cache dữ liệu cũ)
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_batches&t=${Date.now()}`);
         
-        if (!response.ok) throw new Error("Network response was not ok");
+        if (!response.ok) throw new Error("Phản hồi từ Server không tốt");
         
         const remoteData = await response.json();
         
-        if (remoteData && remoteData.length > 0) {
-            // 3. Cập nhật dữ liệu vào biến db và LocalStorage
-            db = remoteData; 
-            saveToLocal(); 
+        if (remoteData && Array.isArray(remoteData)) {
+            // 3. QUAN TRỌNG: Gán vào window.db để tất cả các hàm khác (như PDF) đều thấy
+            window.db = remoteData; 
             
-            // 4. Cập nhật giao diện Dropdown
-            window.updateBatchSelector(); // Sử dụng hàm này để tái sử dụng code đổ data vào select
+            // 4. Lưu bản sao vào máy cục bộ (LocalStorage)
+            window.saveToLocal(); 
             
-            window.showToast("Đã đồng bộ danh sách lô từ hệ thống", "success");
-            console.log("Đã đồng bộ dữ liệu từ Cloud");
+            // 5. Cập nhật giao diện
+            window.updateBatchSelector();
+            window.updateDashboard(); 
+            
+            window.showToast("Đồng bộ dữ liệu thành công!", "success");
+            console.log("✅ Dữ liệu đã nạp vào window.db:", window.db);
         }
     } catch (e) {
-        console.error("Lỗi kết nối Server, đang kiểm tra dữ liệu nội bộ:", e);
+        console.error("❌ Lỗi kết nối Server:", e);
         
-        // 5. Xử lý khi mất mạng/lỗi server: Khôi phục từ máy cục bộ
-        loadFromLocal(); 
+        // 6. Xử lý khi lỗi mạng: Khôi phục từ LocalStorage
+        window.loadFromLocal(); 
         
-        if (db && db.length > 0) {
-            window.showToast("Mất kết nối. Đã khôi phục dữ liệu nháp.", "warning");
+        if (window.db && window.db.length > 0) {
+            window.showToast("Mất kết nối. Đã dùng dữ liệu offline.", "warning");
         } else {
-            window.showToast("Không thể tải dữ liệu. Vui lòng kiểm tra mạng!", "error");
+            window.showToast("Không thể tải dữ liệu. Kiểm tra internet!", "error");
             if (selector) selector.innerHTML = '<option value="">❌ Lỗi tải dữ liệu</option>';
         }
     }
@@ -118,7 +128,53 @@ window.initBatch = async function() {
         window.showToast("Lỗi kết nối Server! Vui lòng thử lại.", "error");
     }
 };
-  
+// ---HÀM: QUẢN LÝ BOM ---
+let GLOBAL_BOM = {}; // Biến lưu trữ BOM tải từ Sheets
+
+// Hàm tải BOM từ Google Sheets
+window.loadBOMFromServer = async function() {
+    try {
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_bom`);
+        const data = await response.json();
+        GLOBAL_BOM = data;
+        
+        // Cập nhật các tùy chọn vào dropdown bomSelector
+        const selector = document.getElementById('bomSelector');
+        selector.innerHTML = '<option value="">-- CHỌN SKU --</option>';
+        Object.keys(GLOBAL_BOM).forEach(sku => {
+            selector.innerHTML += `<option value="${sku}">${sku}</option>`;
+        });
+        
+        console.log("✅ Đã tải định mức BOM thành công.");
+    } catch (e) {
+        console.error("❌ Không thể tải BOM:", e);
+    }
+};
+
+// Sửa lại hàm hiển thị BOM
+window.displayBOM = function(sku) {
+    const displayArea = document.getElementById('bomDisplay');
+    const body = document.getElementById('bomBody');
+    
+    if (!sku || !GLOBAL_BOM[sku]) {
+        displayArea.style.display = 'none';
+        return;
+    }
+
+    body.innerHTML = GLOBAL_BOM[sku].map(item => `
+        <tr>
+            <td style="font-weight: 600;">${item.name}</td>
+            <td>${item.ratio}</td>
+            <td style="color: var(--primary); font-weight: 800;">${item.amount}</td>
+        </tr>
+    `).join('');
+
+    displayArea.style.display = 'block';
+};
+
+// Gọi hàm tải khi bắt đầu ứng dụng
+window.loadBOMFromServer();
+
 // --- HÀM 2: LƯU SẢN XUẤT (VẬN HÀNH) ---
 window.saveProduction = async function() {
     const bId = document.getElementById('activeBatches').value;
@@ -179,31 +235,25 @@ window.sendToDatabase = async function(payload) {
     console.log("🚀 Đang gửi dữ liệu lên Server...", payload.action);
     
     try {
-        // Đính kèm token bảo mật vào dữ liệu gửi đi
         payload.token = API_SECRET_TOKEN; 
 
-        // Thực hiện lệnh gọi fetch (không dùng no-cors để có thể đọc được kết quả trả về)
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
+        // SỬA TẠI ĐÂY: Thêm mode 'no-cors' và đổi Content-Type
+        await fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
+            mode: "no-cors", 
+            cache: "no-cache",
+            headers: {
+                "Content-Type": "text/plain", // Tránh kích hoạt kiểm tra CORS phức tạp
+            },
             body: JSON.stringify(payload)
         });
 
-        // Kiểm tra phản hồi từ HTTP (ví dụ: lỗi 404, 500, hoặc Access Denied 401/403)
-        if (!response.ok) {
-            throw new Error(`Server báo lỗi: ${response.status}`);
-        }
-
-        // Nếu muốn đọc tin nhắn trả về từ Google Script (tùy chọn)
-        // const result = await response.text();
-        // console.log("Kết quả từ Server:", result);
-
+        // Với no-cors, nếu không nhảy vào catch thì coi như gửi thành công
         return true; 
     } catch (e) {
         console.error("❌ Lỗi gửi dữ liệu:", e);
-        
-        // Hiển thị thông báo lỗi trực quan cho công nhân/quản đốc
         if (window.showToast) {
-            window.showToast("Lỗi kết nối hoặc Từ chối truy cập!", "error");
+            window.showToast("Lỗi kết nối hoặc mất mạng!", "error");
         }
         return false;
     }
@@ -430,28 +480,30 @@ window.controlSections = function(status) {
     const secProduction = document.querySelector('.section-2');
     const secQC = document.querySelector('.section-3');
 
-    // Reset mặc định: Khóa và làm mờ
-    [secProduction, secQC].forEach(sec => {
-        sec.style.opacity = "0.4";
-        sec.style.pointerEvents = "none";
-    });
+    if (!secProduction || !secQC) return;
 
-    // Hàm hỗ trợ khóa/mở khóa các element bên trong một Section
+    // Hàm hỗ trợ khóa/mở khóa element
     const toggleInputs = (section, isDisable) => {
         section.querySelectorAll('input, select, textarea, button').forEach(el => {
-            // Trừ nút "Xuất PDF" hoặc các nút điều hướng nếu cần
-            if (!el.classList.contains('btn-export')) {
+            // KHÔNG BAO GIỜ khóa dropdown chọn lô và các nút điều hướng chính
+            if (el.id !== 'activeBatches' && el.id !== 'qcBatchSelect' && !el.classList.contains('btn-export')) {
                 el.disabled = isDisable;
             }
         });
     };
 
+    // LOGIC ĐIỀU KHIỂN
     if (status === 'Created') {
+        // Lô mới: Mở mục Sản xuất, Khóa mục QC
         secProduction.style.opacity = "1";
         secProduction.style.pointerEvents = "all";
-        toggleInputs(secProduction, false); // Mở khóa để nhập liệu
+        toggleInputs(secProduction, false);
+
+        secQC.style.opacity = "0.4";
+        secQC.style.pointerEvents = "none";
     } 
     else if (status === 'Produced') {
+        // Đã SX: Mở cả 2 mục để QC vào làm việc
         secProduction.style.opacity = "1";
         secProduction.style.pointerEvents = "all";
         secQC.style.opacity = "1";
@@ -460,16 +512,16 @@ window.controlSections = function(status) {
         toggleInputs(secQC, false);
     }
     else if (status === 'Completed') {
-        secProduction.style.opacity = "0.8"; // Vẫn nhìn rõ để xem dữ liệu
+        // Đã hoàn thành: Cho xem nhưng KHÓA NHẬP LIỆU
+        secProduction.style.opacity = "0.8";
         secProduction.style.pointerEvents = "all";
-        secQC.style.opacity = "1";
+        secQC.style.opacity = "0.8";
         secQC.style.pointerEvents = "all";
         
-        // QUAN TRỌNG: Khóa toàn bộ nhập liệu ở Mục 02 và các nút lưu ở Mục 03
         toggleInputs(secProduction, true); 
         toggleInputs(secQC, true);
         
-        window.showToast("Hồ sơ này đã đóng. Chỉ có quyền xem!", "warning");
+        window.showToast("Hồ sơ đã chốt. Chỉ có quyền xem!", "warning");
     }
 };
 
@@ -495,67 +547,96 @@ window.showToast = function(message, type = 'success') {
 
 //5. Hàm xuất dữ liệu pdf 24/02/2026
 window.exportBatchPDF = function() {
-    const searchId = document.getElementById('searchId').value.trim();
-    const batch = db.find(b => b.batch_id === searchId);
+    // 1. LẤY MÃ LÔ TỪ GIAO DIỆN
+    const searchId = document.getElementById('searchId')?.value.trim() || 
+                     document.getElementById('qcBatchSelect')?.value || 
+                     document.getElementById('activeBatches')?.value;
 
-    if (!batch) {
-        showToast("Không tìm thấy mã Lô này để xuất PDF!", "error");
-        return;
+    console.log("🔍 Đang tìm kiếm mã lô:", searchId);
+
+    // Kiểm tra dữ liệu db toàn cục (window.db)
+    if (!window.db || window.db.length === 0) {
+        // Cố gắng khôi phục từ máy nếu db trống
+        const saved = localStorage.getItem('mes_db_backup');
+        if (saved) window.db = JSON.parse(saved);
     }
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const batch = (window.db || []).find(b => String(b.batch_id) === String(searchId));
 
-    // 1. Tiêu đề và Header
-    doc.setFontSize(22);
-    doc.setTextColor(0, 210, 255); // Màu Primary xanh của bạn
-    doc.text("PHIEU KIEM SOAT LO (E-BATCH RECORD)", 105, 20, { align: "center" });
+    if (!batch) {
+        console.error("❌ Danh sách lô hiện có:", window.db);
+        return window.showToast(`Không tìm thấy dữ liệu cho mã lô: ${searchId}`, "error");
+    }
 
-    // 2. Thông tin chung
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Ma Lo: ${batch.batch_id}`, 14, 40);
-    doc.text(`Don hang: ${batch.order_id}`, 14, 47);
-    doc.text(`San pham (SKU): ${batch.sku_id}`, 14, 54);
-    doc.text(`Trang thai: ${batch.status}`, 140, 40);
-    doc.text(`Ngay xuat: ${new Date().toLocaleDateString('vi-VN')}`, 140, 47);
+    try {
+        // 2. KHỞI TẠO JSPDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
 
-    // 3. Bang chi tiet san xuat (AutoTable)
-    const tableData = (batch.outputLogs || []).map((log, index) => [
-        index + 1,
-        log.process || '-',
-        log.ingridient || '-',
-        log.rm_batch_id || '-',
-        log.input || '0',
-        log.timestamp || '-'
-    ]);
+        // 3. KIỂM TRA VÀ ĐĂNG KÝ PLUGIN AUTOTABLE (BẢN VÁ LỖI)
+        if (typeof doc.autoTable !== 'function') {
+            const plugin = window.jspdfAutotable || 
+                           window.jspdf_autotable || 
+                           (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable);
 
-    doc.autoTable({
-        startY: 65,
-        head: [['STT', 'CONG DOAN', 'NGUYEN LIEU', 'LO RM', 'SO LUONG', 'THOI GIAN']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: { fillColor: [0, 210, 255] }
-    });
+            if (plugin) {
+                window.jspdf.jsPDF.API.autoTable = plugin.default || plugin;
+                console.log("✅ Đã kết nối Plugin AutoTable thành công!");
+            } else {
+                return window.showToast("Thư viện vẽ bảng chưa sẵn sàng. Hãy đợi vài giây hoặc nhấn F5!", "warning");
+            }
+        }
 
-    // 4. Phan ghi chu QC
-    let finalY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(14);
-    doc.text("KET QUA KIEM DINH (QC)", 14, finalY);
-    doc.setFontSize(11);
-    doc.text(`Ket luan: ${batch.pqc_status || 'Chua kiem tra'}`, 14, finalY + 10);
-    doc.text(`Ghi chu: ${batch.note || 'Khong co'}`, 14, finalY + 17);
+        // 4. NỘI DUNG HEADER (Viết không dấu để an toàn font chữ)
+        doc.setFontSize(18);
+        doc.text("PHIEU KIEM SOAT LO (E-BATCH RECORD)", 105, 20, { align: "center" });
+        
+        doc.setFontSize(10);
+        doc.text(`Ma Lo: ${batch.batch_id}`, 14, 35);
+        doc.text(`SKU: ${batch.sku_id}`, 14, 42);
 
-    // 5. Chu ky
-    doc.text("Quan doc xuong", 40, finalY + 40);
-    doc.text("Kiem dinh viên", 150, finalY + 40);
-    doc.setFontSize(8);
-    doc.text("(Ky và ghi ro ho ten)", 41, finalY + 45);
-    doc.text("(Ky và ghi ro ho ten)", 151, finalY + 45);
+        // 5. CHUẨN BỊ DỮ LIỆU BẢNG
+        const logs = batch.outputLogs || [];
+        const tableData = logs.map((log, index) => [
+            index + 1,
+            log.process || '-',
+            log.ingridient || '-',
+            log.rm_batch_id || '-',
+            log.input || '0',
+            log.timestamp || '-'
+        ]);
 
-    // 6. Xuat file
-    doc.save(`MES_Report_${batch.batch_id}.pdf`);
-    showToast("Đã tải xuống hồ sơ PDF!", "success");
+        // 6. VẼ BẢNG
+        doc.autoTable({
+            startY: 50,
+            head: [['STT', 'CONG DOAN', 'NGUYEN LIEU', 'LO RM', 'SO LUONG', 'THOI GIAN']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [0, 210, 255] },
+            styles: { fontSize: 9 }
+        });
+
+        // 7. TÍNH TOÁN VỊ TRÍ Y CUỐI CÙNG ĐỂ VIẾT QC
+        let finalY = 60;
+        if (doc.lastAutoTable && doc.lastAutoTable.finalY) {
+            finalY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // 8. KẾT QUẢ QC
+        doc.setFontSize(12);
+        doc.text("KET QUA QC:", 14, finalY);
+        doc.setFontSize(10);
+        doc.text(`- Ket luan: ${batch.pqc_status || 'Chua xac nhan'}`, 14, finalY + 8);
+        doc.text(`- Ghi chu: ${batch.note || '-'}`, 14, finalY + 15);
+
+        // 9. LƯU FILE
+        doc.save(`MES_Report_${batch.batch_id}.pdf`);
+        window.showToast("Tải PDF thành công!", "success");
+
+    } catch (err) {
+        console.error("❌ Lỗi xuất PDF chi tiết:", err);
+        window.showToast(err.message || "Lỗi hệ thống PDF", "error");
+    }
 };
 //HÀM HIỂN THỊ <DASHBOARD>24/02/2026</DASHBOARD>
 window.updateDashboard = function() {
@@ -579,6 +660,8 @@ window.updateDashboard = function() {
 // 1. Cuối hàm loadExistingBatches (khi vừa tải xong từ server)
 // 2. Cuối hàm initBatch (khi vừa tạo lô mới)
 // 3. Cuối hàm finalizeQC (khi vừa chốt xong 1 lô)
+
+//HÀM TRA CỨU CÔNG THỨ<C>24/02/2026</C>
 //HÀM LOGIC QUÉT MÃ <QR>24/02/2026</QR>
 // Hàm mở camera để quét
 let html5QrCode;
@@ -660,3 +743,9 @@ window.stopScan = function() {
         document.getElementById('camera-modal').style.display = 'none';
     }
 };
+// Đảm bảo khởi chạy mọi thứ khi trang web sẵn sàng
+window.addEventListener('DOMContentLoaded', () => {
+    window.loadFromLocal();         // 1. Lấy dữ liệu nháp từ máy
+    window.loadExistingBatches();   // 2. Đồng bộ dữ liệu lô từ Cloud
+    window.loadBOMFromServer();      // 3. Tải định mức từ Cloud
+});

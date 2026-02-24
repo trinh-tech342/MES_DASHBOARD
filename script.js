@@ -1,6 +1,6 @@
 // Khai báo db ở đầu file
 let db = []; 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrY1sg91-pP0RAVpLPA4v9euAlobpQHa9jk6DRtPPMEGK8uYd9kCD0_sB46ZCEw0u9/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwb1gGY8IxlRufesBhyvcHhM0mhLibIfsJN14uOqvNApKVurVfZM6--qxpBUN-FXt5lJw/exec";
 // Hàm lưu db vào bộ nhớ trình duyệt (24/02/2026)
 function saveToLocal() {
     localStorage.setItem('mes_db_backup', JSON.stringify(db));
@@ -171,16 +171,40 @@ window.addAuditToUI = function(msg) {
     }
 };
 // --- HÀM 3: HÀM GỬI DATA (CHỐNG TREO) ---
+// 1. Khai báo khóa bí mật ở đầu file (phải khớp với mã trong Google Apps Script)
+const API_SECRET_TOKEN = "MES_PRO_SECRET_2026"; 
+
+// 2. Hàm gửi dữ liệu duy nhất đã được tối ưu
 window.sendToDatabase = async function(payload) {
+    console.log("🚀 Đang gửi dữ liệu lên Server...", payload.action);
+    
     try {
-        // BỎ mode: "no-cors" để nhận phản hồi thực
+        // Đính kèm token bảo mật vào dữ liệu gửi đi
+        payload.token = API_SECRET_TOKEN; 
+
+        // Thực hiện lệnh gọi fetch (không dùng no-cors để có thể đọc được kết quả trả về)
         const response = await fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
             body: JSON.stringify(payload)
         });
+
+        // Kiểm tra phản hồi từ HTTP (ví dụ: lỗi 404, 500, hoặc Access Denied 401/403)
+        if (!response.ok) {
+            throw new Error(`Server báo lỗi: ${response.status}`);
+        }
+
+        // Nếu muốn đọc tin nhắn trả về từ Google Script (tùy chọn)
+        // const result = await response.text();
+        // console.log("Kết quả từ Server:", result);
+
         return true; 
     } catch (e) {
-        console.error("Lỗi gửi dữ liệu:", e);
+        console.error("❌ Lỗi gửi dữ liệu:", e);
+        
+        // Hiển thị thông báo lỗi trực quan cho công nhân/quản đốc
+        if (window.showToast) {
+            window.showToast("Lỗi kết nối hoặc Từ chối truy cập!", "error");
+        }
         return false;
     }
 };

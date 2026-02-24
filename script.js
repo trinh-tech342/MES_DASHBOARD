@@ -2,6 +2,15 @@
 // Đưa dòng này lên vị trí đầu tiên của file script
 window.db = window.db || [];
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjv09fsvCKdzwDrAxxKkmmDSNogXaNKY3SHwa9-2j_ADu2g-v4-DaCP3gpV50uunAFTw/exec";
+// Ép định nghĩa thư viện nếu nó nạp chậm
+window.onload = function() {
+    setTimeout(() => {
+        if (window.jspdf && window.jspdfAutotable) {
+            window.jspdf.jsPDF.API.autoTable = window.jspdfAutotable.default || window.jspdfAutotable;
+            console.log("✅ Hệ thống PDF đã sẵn sàng từ lúc khởi động!");
+        }
+    }, 1000); // Đợi 1 giây sau khi load trang để thư viện kịp ngấm
+};
 // Hàm lưu db vào bộ nhớ trình duyệt (24/02/2026)
 window.saveToLocal = function() {
     try {
@@ -547,95 +556,102 @@ window.showToast = function(message, type = 'success') {
 
 //5. Hàm xuất dữ liệu pdf 24/02/2026
 window.exportBatchPDF = function() {
-    // 1. LẤY MÃ LÔ TỪ GIAO DIỆN
     const searchId = document.getElementById('searchId')?.value.trim() || 
                      document.getElementById('qcBatchSelect')?.value || 
                      document.getElementById('activeBatches')?.value;
 
-    console.log("🔍 Đang tìm kiếm mã lô:", searchId);
-
-    // Kiểm tra dữ liệu db toàn cục (window.db)
-    if (!window.db || window.db.length === 0) {
-        // Cố gắng khôi phục từ máy nếu db trống
-        const saved = localStorage.getItem('mes_db_backup');
-        if (saved) window.db = JSON.parse(saved);
-    }
-
     const batch = (window.db || []).find(b => String(b.batch_id) === String(searchId));
-
-    if (!batch) {
-        console.error("❌ Danh sách lô hiện có:", window.db);
-        return window.showToast(`Không tìm thấy dữ liệu cho mã lô: ${searchId}`, "error");
-    }
+    if (!batch) return window.showToast("Không tìm thấy mã lô để xuất PDF!", "error");
 
     try {
-        // 2. KHỞI TẠO JSPDF
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-
-        // 3. KIỂM TRA VÀ ĐĂNG KÝ PLUGIN AUTOTABLE (BẢN VÁ LỖI)
-        if (typeof doc.autoTable !== 'function') {
-            const plugin = window.jspdfAutotable || 
-                           window.jspdf_autotable || 
-                           (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable);
-
-            if (plugin) {
-                window.jspdf.jsPDF.API.autoTable = plugin.default || plugin;
-                console.log("✅ Đã kết nối Plugin AutoTable thành công!");
-            } else {
-                return window.showToast("Thư viện vẽ bảng chưa sẵn sàng. Hãy đợi vài giây hoặc nhấn F5!", "warning");
-            }
-        }
-
-        // 4. NỘI DUNG HEADER (Viết không dấu để an toàn font chữ)
-        doc.setFontSize(18);
-        doc.text("PHIEU KIEM SOAT LO (E-BATCH RECORD)", 105, 20, { align: "center" });
+        
+        // --- 1. HEADER CÔNG TY ---
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(0, 123, 255); // Màu xanh Primary
+        doc.text("MES PRO MANUFACTURING", 105, 20, { align: "center" });
         
         doc.setFontSize(10);
-        doc.text(`Ma Lo: ${batch.batch_id}`, 14, 35);
-        doc.text(`SKU: ${batch.sku_id}`, 14, 42);
+        doc.setTextColor(100);
+        doc.setFont("helvetica", "normal");
+        doc.text("He thong Quan ly San xuat & Truy xuat Nguon goc", 105, 27, { align: "center" });
+        doc.line(14, 32, 196, 32); // Đường kẻ ngang
 
-        // 5. CHUẨN BỊ DỮ LIỆU BẢNG
-        const logs = batch.outputLogs || [];
+        // --- 2. THÔNG TIN CHUNG ---
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text("THONG TIN LO SAN XUAT", 14, 42);
+        
+        doc.setFontSize(10);
+        const infoY = 50;
+        doc.text(`Ma so Lo: ${batch.batch_id}`, 14, infoY);
+        doc.text(`Don hang: ${batch.order_id || 'N/A'}`, 14, infoY + 7);
+        doc.text(`San pham (SKU): ${batch.sku_id}`, 100, infoY);
+        doc.text(`Ngay tao: ${batch.timestamp || 'N/A'}`, 100, infoY + 7);
+
+        // --- 3. BẢNG NHẬT KÝ VẬN HÀNH ---
+        const logs = Array.isArray(batch.outputLogs) ? batch.outputLogs : [];
         const tableData = logs.map((log, index) => [
             index + 1,
             log.process || '-',
             log.ingridient || '-',
             log.rm_batch_id || '-',
-            log.input || '0',
+            `${log.input || '0'} kg`,
             log.timestamp || '-'
         ]);
 
-        // 6. VẼ BẢNG
         doc.autoTable({
-            startY: 50,
+            startY: 65,
             head: [['STT', 'CONG DOAN', 'NGUYEN LIEU', 'LO RM', 'SO LUONG', 'THOI GIAN']],
             body: tableData,
-            theme: 'striped',
-            headStyles: { fillColor: [0, 210, 255] },
-            styles: { fontSize: 9 }
+            theme: 'grid', // Kẻ khung ô
+            headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9, cellPadding: 3 },
+            columnStyles: {
+                0: { cellWidth: 10 },
+                4: { fontStyle: 'bold', halign: 'right' }
+            }
         });
 
-        // 7. TÍNH TOÁN VỊ TRÍ Y CUỐI CÙNG ĐỂ VIẾT QC
-        let finalY = 60;
-        if (doc.lastAutoTable && doc.lastAutoTable.finalY) {
-            finalY = doc.lastAutoTable.finalY + 15;
-        }
-
-        // 8. KẾT QUẢ QC
+        // --- 4. KẾT QUẢ KIỂM ĐỊNH (QC) ---
+        let finalY = doc.lastAutoTable.finalY + 15;
+        
         doc.setFontSize(12);
-        doc.text("KET QUA QC:", 14, finalY);
+        doc.setFont("helvetica", "bold");
+        doc.text("KET QUA KIEM DINH (QC REPORT)", 14, finalY);
+        
+        // Hộp trạng thái Pass/Fail
+        const isPass = (batch.pqc_status || '').toLowerCase() === 'pass';
+        doc.setFillColor(isPass ? 40 : 220, isPass ? 167 : 53, isPass ? 69 : 69); // Xanh nếu Pass, Đỏ nếu Fail
+        doc.rect(14, finalY + 4, 30, 10, 'F');
+        
+        doc.setTextColor(255);
         doc.setFontSize(10);
-        doc.text(`- Ket luan: ${batch.pqc_status || 'Chua xac nhan'}`, 14, finalY + 8);
-        doc.text(`- Ghi chu: ${batch.note || '-'}`, 14, finalY + 15);
+        doc.text(isPass ? "DAT (PASS)" : "LOI (FAIL)", 18, finalY + 10);
+        
+        doc.setTextColor(0);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Ghi chu: ${batch.note || 'Khong co ghi chu'}`, 50, finalY + 10);
 
-        // 9. LƯU FILE
-        doc.save(`MES_Report_${batch.batch_id}.pdf`);
-        window.showToast("Tải PDF thành công!", "success");
+        // --- 5. CHỮ KÝ ---
+        const signY = finalY + 35;
+        doc.setFont("helvetica", "italic");
+        doc.text("Nguoi Lap Phieu", 40, signY);
+        doc.text("Quan Doc Phan Xuong", 140, signY);
+        
+        doc.setFontSize(8);
+        doc.text("(Ky va ghi ro ho ten)", 42, signY + 5);
+        doc.text("(Ky va xac nhan)", 148, signY + 5);
+
+        // --- 6. XUẤT FILE ---
+        doc.save(`E-Batch_Report_${batch.batch_id}.pdf`);
+        window.showToast("Xuat PDF thanh cong!", "success");
 
     } catch (err) {
-        console.error("❌ Lỗi xuất PDF chi tiết:", err);
-        window.showToast(err.message || "Lỗi hệ thống PDF", "error");
+        console.error("Lỗi PDF:", err);
+        window.showToast("Loi khi tao PDF!", "error");
     }
 };
 //HÀM HIỂN THỊ <DASHBOARD>24/02/2026</DASHBOARD>

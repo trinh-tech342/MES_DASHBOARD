@@ -10,7 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
-    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" defer></script>
 </head>
 <body>
@@ -74,7 +75,36 @@
                 </div>
                 <button onclick="initBatch()" class="btn-glow primary">KÍCH HOẠT HỒ SƠ</button>
             </section>
-
+            <section class="glass-card section-bom">
+                <div class="card-head">
+                    <span class="step-num">BOM</span>
+                    <h3>Tra cứu Định mức & Công thức</h3>
+                </div>
+                <div class="selection-group">
+                    <label>Chọn Sản phẩm (SKU) để xem công thức</label>
+                    <select id="bomSelector" onchange="displayBOM(this.value)">
+                        <option value="">-- CHỌN SKU --</option>
+                        <option value="SKU-001">Sản phẩm A (Tiêu chuẩn)</option>
+                        <option value="SKU-002">Sản phẩm B (Cao cấp)</option>
+                    </select>
+                </div>
+                <div id="bomDisplay" class="bom-container" style="display: none;">
+                    <table class="luxury-table bom-table">
+                        <thead>
+                            <tr>
+                                <th>Nguyên liệu</th>
+                                <th>Tỉ lệ (%)</th>
+                                <th>Số lượng định mức (kg/lô)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bomBody">
+                            </tbody>
+                    </table>
+                    <div class="bom-note">
+                        <small>⚠️ *Lưu ý: Luôn kiểm tra hạn sử dụng của nguyên liệu trước khi đổ vào máy.*</small>
+                    </div>
+                </div>
+            </section>
             <section class="glass-card section-2">
                 <div class="card-head">
                     <span class="step-num">02</span>

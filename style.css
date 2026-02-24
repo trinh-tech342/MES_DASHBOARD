@@ -10,7 +10,6 @@
 }
 
 * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-
 body {
     background-color: var(--bg);
     color: var(--text);
@@ -42,7 +41,6 @@ body {
 #sku-container {
     margin-top: 25px;
 }
-
 /* Badges Neon Effect */
 .status-workflow { display: flex; align-items: center; gap: 15px; }
 .badge {
@@ -109,23 +107,26 @@ input:focus { outline: none; border-color: var(--primary); background: rgba(255,
     width: 100%; margin-top: 20px; padding: 16px; border-radius: 14px; border: none;
     font-weight: 800; font-size: 13px; letter-spacing: 1px; cursor: pointer; transition: 0.3s;
 }
+
 .btn-glow.primary { background: var(--primary); color: #000; box-shadow: 0 8px 25px rgba(0, 210, 255, 0.4); }
 .btn-glow.primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0, 210, 255, 0.6); }
-
 .btn-glow.orange { background: var(--orange); color: #000; box-shadow: 0 8px 25px rgba(255, 159, 10, 0.4); }
 .btn-glow.success { background: var(--success); color: #000; box-shadow: 0 8px 25px rgba(50, 215, 75, 0.4); }
+
 
 .btn-outline { background: transparent; border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
 .btn-outline:hover { background: rgba(255,255,255,0.05); }
 
 .search-flex { display: flex; gap: 15px; }
+
 .btn-icon { background: white; color: black; border: none; border-radius: 12px; padding: 12px 25px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+
 /*pqcstatus text*/
+
 .minimal-select {
     appearance: none; /* Xóa bỏ icon mặc định của trình duyệt */
     -webkit-appearance: none;
     -moz-appearance: none;
-    
     background-color: #ffffff;
     color: #2c3e50; /* Màu xanh đen cực kỳ dễ đọc */
     padding: 8px 35px 8px 15px; /* Thêm khoảng trống bên phải cho icon mũi tên */
@@ -135,30 +136,41 @@ input:focus { outline: none; border-color: var(--primary); background: rgba(255,
     font-weight: 600;
     cursor: pointer;
     outline: none;
-    
+   
     /* Tạo icon mũi tên xuống bằng hình vẽ thay vì dùng mặc định */
+
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
-    
+
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     transition: all 0.2s ease;
 }
 
+
+
 /* Hiệu ứng khi nhấn vào */
+
 .minimal-select:focus {
     border-color: #007bff;
     box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
 }
 
+
+
 /* Màu riêng cho từng option để dễ phân biệt khi chọn */
+
 option[value="Pending"] { color: #856404; }
 option[value="Pass"] { color: #155724; }
 option[value="Fail"] { color: #721c24; }
+
 /*Phần chữ chọn Lô Đang Vận hành*/
+
 .selection-group {
     margin: 15px 0;
 }
+
+
 
 #activeBatches {
     width: 100%;
@@ -174,15 +186,331 @@ option[value="Fail"] { color: #721c24; }
     transition: all 0.3s ease;
 }
 
+
+
 /* Hiệu ứng khi di chuột vào */
+
 #activeBatches:hover {
     background-color: #e9ecef;
     border-color: #0056b3;
 }
 
+
+
 /* Tùy chỉnh các lựa chọn bên trong (chỉ hoạt động trên một số trình duyệt) */
+
 #activeBatches option {
     background-color: #ffffff;
     color: #333;
     padding: 10px;
+}
+
+/*Hiệu ứng khóa section 24/02/2026*/
+
+ .glass-card {
+    transition: all 0.5s ease; /* Tạo hiệu ứng mượt mà khi mở khóa */
+
+}
+
+
+
+/* Thêm hiệu ứng khi bị khóa */
+
+.glass-card[style*="pointer-events: none"] {
+    filter: grayscale(0.8);
+    position: relative;
+
+}
+
+
+
+/* Tùy chọn: Thêm icon ổ khóa nếu muốn chuyên nghiệp hơn */
+
+.glass-card[style*="pointer-events: none"]::after {
+    content: "🔒 ĐANG KHÓA";
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 10px;
+    color: var(--text-dim);
+}
+
+/*hiệu ứng toast information 24/02/2026*/
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+.toast {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 16px 25px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 250px;
+    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+
+
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid #ff453a; }
+.toast.warning { border-left: 4px solid var(--orange); }
+
+/*Trong nhà máy, các ô input và nút bấm cần cao ít nhất 44px để dễ chạm bằng ngón tay*/
+/* Tăng kích thước vùng chạm */
+.luxury-table select,
+.luxury-table input,
+.btn-outline {
+    height: 48px; /* Kích thước chuẩn cho cảm ứng */
+    font-size: 16px; /* Tránh iOS tự động zoom khi focus */
+}
+
+/* Nút xóa to hơn để dễ bấm */
+.btn-delete {
+    background: rgba(255, 69, 58, 0.2);
+    border: 1px solid #ff453a;
+    color: #ff453a;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Hiệu ứng focus rõ ràng cho công nhân nhìn từ xa */
+
+input:focus, select:focus {
+    border: 2px solid var(--primary) !important;
+    background: rgba(0, 210, 255, 0.1) !important;
+}
+
+/*Nút quét và camera model*/
+
+.input-with-button {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn-scan {
+    background: var(--primary);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 0 20px;
+    height: 48px; /* Khớp với chiều cao của select */
+    font-weight: 800;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.3s;
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+}
+
+.btn-scan:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 210, 255, 0.5);
+}
+
+
+
+/* Modal Camera */
+
+.camera-modal {
+    display: none; /* Ẩn mặc định */
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+
+
+
+.camera-content {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 24px;
+    border: 1px solid var(--glass-border);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+
+
+#reader {
+    width: 100%;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+/*CHỈNH NỀN TỐI CHO CÁC DROPDOWN*/
+
+/* Nhắm mục tiêu trực tiếp vào các ô select trong bảng và dropdown lô */
+
+select option {
+    background-color: #1a1a1a; /* Nền tối hẳn để nổi bật chữ trắng */
+    color: #ffffff;            /* Chữ trắng rõ ràng */
+    padding: 10px;
+}
+
+
+
+/* Tối ưu riêng cho các ô select trong bảng sản xuất */
+
+.luxury-table select {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+    border: 1px solid var(--glass-border);
+    appearance: none; /* Xóa bỏ style mặc định của trình duyệt */
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+}
+
+
+
+/* Đảm bảo khi di chuột qua các lựa chọn vẫn dễ nhìn */
+select option:hover,
+select option:focus {
+    background-color: var(--primary) !important;
+    color: #000 !important;
+}
+
+
+
+/*toGGLE SWITCH 24/02/2026*/
+
+.status-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 50px;
+}
+
+
+
+.status-label { font-weight: 800; font-size: 12px; transition: 0.3s; opacity: 0.3; }
+.status-label.active { opacity: 1; }
+.status-label.pass { color: var(--success); }
+.status-label.fail { color: #ff453a; }
+
+
+
+/* Cấu trúc Switch */
+
+.switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+
+
+
+.slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ff453a; /* Mặc định là đỏ (Fail) */
+    transition: .4s; border-radius: 34px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 26px; width: 26px;
+    left: 4px; bottom: 4px; background-color: white;
+    transition: .4s; border-radius: 50%;
+}
+
+input:checked + .slider { background-color: var(--success); }
+input:checked + .slider:before { transform: translateX(26px); }
+/* Hiệu ứng Glow cho Switch */
+input:checked + .slider { box-shadow: 0 0 15px var(--success); }
+input:not(:checked) + .slider { box-shadow: 0 0 15px #ff453a; }
+
+/* Style cho các ô bị khóa 24/02/2026*/
+input:disabled,
+select:disabled,
+textarea:disabled {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #888 !important;
+    cursor: not-allowed;
+    border: 1px dashed rgba(255, 255, 255, 0.1) !important;
+}
+/* Nút bấm bị khóa */
+button:disabled {
+    filter: grayscale(1);
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/*DASHBOARD HIỂN THỊ 24/02/2026*/
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.dash-card {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    backdrop-filter: blur(10px);
+    transition: 0.3s;
+}
+.dash-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.1);
+}
+.dash-icon {
+    font-size: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+}
+.dash-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.dash-info h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #fff;
 }

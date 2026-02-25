@@ -1,15 +1,24 @@
+/* =========================================
+   NOTE: BIẾN TỔNG & CẤU HÌNH CƠ BẢN
+   ========================================= */
 :root {
     --bg: #050b18;
     --card-bg: rgba(16, 25, 45, 0.7);
     --primary: #00d2ff;
+    --primary-rgb: 0, 210, 255;
     --orange: #ff9f0a;
     --success: #32d74b;
+    --error: #ff453a;
     --text: #ffffff;
     --text-dim: #8e8e93;
     --glass-border: rgba(255, 255, 255, 0.1);
 }
 
-* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+* { 
+    box-sizing: border-box; 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+}
+
 body {
     background-color: var(--bg);
     color: var(--text);
@@ -18,8 +27,15 @@ body {
     background-image: radial-gradient(circle at 50% -20%, #1a3a5f 0%, #050b18 80%);
 }
 
-.container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+.container { 
+    max-width: 1100px; 
+    margin: 0 auto; 
+    padding: 40px 20px; 
+}
 
+/* =========================================
+   NOTE: HEADER & HỆ THỐNG ĐIỀU HƯỚNG (BADGES)
+   ========================================= */
 .main-header {
     display: flex;
     justify-content: space-between;
@@ -30,19 +46,8 @@ body {
 .logo { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
 .logo span { color: var(--primary); text-shadow: 0 0 15px var(--primary); }
 
-/* Tạo khoảng cách cho tất cả các nhóm nhập liệu */
-.selection-group, .field-group {
-    margin-top: 25px; /* Tăng khoảng cách này lên để nhìn thoáng hơn */
-    display: flex;
-    flex-direction: column;
-}
-
-/* Hoặc chỉ nhắm mục tiêu vào dòng SKU nếu nó đứng một mình */
-#sku-container {
-    margin-top: 25px;
-}
-/* Badges Neon Effect */
 .status-workflow { display: flex; align-items: center; gap: 15px; }
+
 .badge {
     padding: 8px 18px;
     border-radius: 50px;
@@ -64,420 +69,16 @@ body {
 
 .connector { width: 30px; height: 1px; background: var(--glass-border); }
 
-/* Glass Cards */
-.glass-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 30px;
-    margin-bottom: 25px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-}
-
-.card-head { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
-.step-num { font-size: 12px; color: var(--primary); font-weight: 800; opacity: 0.5; }
-.card-head h3 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
-
-/* Form Elements */
-.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
-input, select, textarea {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    color: white;
-    font-size: 14px;
-    transition: 0.3s;
-}
-input:focus { outline: none; border-color: var(--primary); background: rgba(255,255,255,0.07); }
-
-/* Luxury Table */
-.table-wrapper { margin: 20px 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border); }
-.luxury-table { width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.2); }
-.luxury-table th { padding: 15px; background: rgba(255,255,255,0.03); font-size: 10px; color: var(--text-dim); text-align: left; }
-.luxury-table td { padding: 12px 15px; border-top: 1px solid var(--glass-border); }
-.luxury-table input { padding: 8px; border-radius: 8px; font-size: 13px; }
-
-/* Buttons Glow */
-.btn-glow {
-    width: 100%; margin-top: 20px; padding: 16px; border-radius: 14px; border: none;
-    font-weight: 800; font-size: 13px; letter-spacing: 1px; cursor: pointer; transition: 0.3s;
-}
-
-.btn-glow.primary { background: var(--primary); color: #000; box-shadow: 0 8px 25px rgba(0, 210, 255, 0.4); }
-.btn-glow.primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0, 210, 255, 0.6); }
-.btn-glow.orange { background: var(--orange); color: #000; box-shadow: 0 8px 25px rgba(255, 159, 10, 0.4); }
-.btn-glow.success { background: var(--success); color: #000; box-shadow: 0 8px 25px rgba(50, 215, 75, 0.4); }
-
-
-.btn-outline { background: transparent; border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
-.btn-outline:hover { background: rgba(255,255,255,0.05); }
-
-.search-flex { display: flex; gap: 15px; }
-
-.btn-icon { background: white; color: black; border: none; border-radius: 12px; padding: 12px 25px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; }
-
-/*pqcstatus text*/
-
-.minimal-select {
-    appearance: none; /* Xóa bỏ icon mặc định của trình duyệt */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-color: #ffffff;
-    color: #2c3e50; /* Màu xanh đen cực kỳ dễ đọc */
-    padding: 8px 35px 8px 15px; /* Thêm khoảng trống bên phải cho icon mũi tên */
-    border: 2px solid #dee2e6; /* Viền xám nhạt tinh tế */
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    outline: none;
-   
-    /* Tạo icon mũi tên xuống bằng hình vẽ thay vì dùng mặc định */
-
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: all 0.2s ease;
-}
-
-
-
-/* Hiệu ứng khi nhấn vào */
-
-.minimal-select:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
-}
-
-
-
-/* Màu riêng cho từng option để dễ phân biệt khi chọn */
-
-option[value="Pending"] { color: #856404; }
-option[value="Pass"] { color: #155724; }
-option[value="Fail"] { color: #721c24; }
-
-/*Phần chữ chọn Lô Đang Vận hành*/
-
-.selection-group {
-    margin: 15px 0;
-}
-
-
-
-#activeBatches {
-    width: 100%;
-    padding: 10px 15px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #2c3e50; /* Màu chữ xanh đen đậm */
-    background-color: #f8f9fa; /* Nền xám cực nhẹ, không bị lóa */
-    border: 2px solid #007bff; /* Viền xanh dương để tạo điểm nhấn */
-    border-radius: 8px;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.3s ease;
-}
-
-
-
-/* Hiệu ứng khi di chuột vào */
-
-#activeBatches:hover {
-    background-color: #e9ecef;
-    border-color: #0056b3;
-}
-
-
-
-/* Tùy chỉnh các lựa chọn bên trong (chỉ hoạt động trên một số trình duyệt) */
-
-#activeBatches option {
-    background-color: #ffffff;
-    color: #333;
-    padding: 10px;
-}
-
-/*Hiệu ứng khóa section 24/02/2026*/
-
- .glass-card {
-    transition: all 0.5s ease; /* Tạo hiệu ứng mượt mà khi mở khóa */
-
-}
-
-
-
-/* Thêm hiệu ứng khi bị khóa */
-
-.glass-card[style*="pointer-events: none"] {
-    filter: grayscale(0.8);
-    position: relative;
-
-}
-
-
-
-/* Tùy chọn: Thêm icon ổ khóa nếu muốn chuyên nghiệp hơn */
-
-.glass-card[style*="pointer-events: none"]::after {
-    content: "🔒 ĐANG KHÓA";
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 10px;
-    color: var(--text-dim);
-}
-
-/*hiệu ứng toast information 24/02/2026*/
-
-.toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-}
-.toast {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 16px 25px;
-    border-radius: 15px;
-    margin-bottom: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-    font-weight: 600;
-    min-width: 250px;
-    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-
-
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-
-
-.toast.success { border-left: 4px solid var(--success); }
-.toast.error { border-left: 4px solid #ff453a; }
-.toast.warning { border-left: 4px solid var(--orange); }
-
-/*Trong nhà máy, các ô input và nút bấm cần cao ít nhất 44px để dễ chạm bằng ngón tay*/
-/* Tăng kích thước vùng chạm */
-.luxury-table select,
-.luxury-table input,
-.btn-outline {
-    height: 48px; /* Kích thước chuẩn cho cảm ứng */
-    font-size: 16px; /* Tránh iOS tự động zoom khi focus */
-}
-
-/* Nút xóa to hơn để dễ bấm */
-.btn-delete {
-    background: rgba(255, 69, 58, 0.2);
-    border: 1px solid #ff453a;
-    color: #ff453a;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-/* Hiệu ứng focus rõ ràng cho công nhân nhìn từ xa */
-
-input:focus, select:focus {
-    border: 2px solid var(--primary) !important;
-    background: rgba(0, 210, 255, 0.1) !important;
-}
-
-/*Nút quét và camera model*/
-
-.input-with-button {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.btn-scan {
-    background: var(--primary);
-    color: #000;
-    border: none;
-    border-radius: 12px;
-    padding: 0 20px;
-    height: 48px; /* Khớp với chiều cao của select */
-    font-weight: 800;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: 0.3s;
-    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
-}
-
-.btn-scan:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 210, 255, 0.5);
-}
-
-
-
-/* Modal Camera */
-
-.camera-modal {
-    display: none; /* Ẩn mặc định */
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(10px);
-    z-index: 10000;
-    justify-content: center;
-    align-items: center;
-}
-
-
-
-.camera-content {
-    background: var(--card-bg);
-    padding: 20px;
-    border-radius: 24px;
-    border: 1px solid var(--glass-border);
-    width: 90%;
-    max-width: 400px;
-    text-align: center;
-}
-
-
-
-#reader {
-    width: 100%;
-    border-radius: 15px;
-    overflow: hidden;
-    margin-bottom: 15px;
-}
-
-/*CHỈNH NỀN TỐI CHO CÁC DROPDOWN*/
-
-/* Nhắm mục tiêu trực tiếp vào các ô select trong bảng và dropdown lô */
-
-select option {
-    background-color: #1a1a1a; /* Nền tối hẳn để nổi bật chữ trắng */
-    color: #ffffff;            /* Chữ trắng rõ ràng */
-    padding: 10px;
-}
-
-
-
-/* Tối ưu riêng cho các ô select trong bảng sản xuất */
-
-.luxury-table select {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: white;
-    border: 1px solid var(--glass-border);
-    appearance: none; /* Xóa bỏ style mặc định của trình duyệt */
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    padding-right: 30px;
-}
-
-
-
-/* Đảm bảo khi di chuột qua các lựa chọn vẫn dễ nhìn */
-select option:hover,
-select option:focus {
-    background-color: var(--primary) !important;
-    color: #000 !important;
-}
-
-
-
-/*toGGLE SWITCH 24/02/2026*/
-
-.status-toggle-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 15px;
-    border-radius: 50px;
-}
-
-
-
-.status-label { font-weight: 800; font-size: 12px; transition: 0.3s; opacity: 0.3; }
-.status-label.active { opacity: 1; }
-.status-label.pass { color: var(--success); }
-.status-label.fail { color: #ff453a; }
-
-
-
-/* Cấu trúc Switch */
-
-.switch { position: relative; display: inline-block; width: 60px; height: 34px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-
-
-
-.slider {
-    position: absolute; cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #ff453a; /* Mặc định là đỏ (Fail) */
-    transition: .4s; border-radius: 34px;
-}
-.slider:before {
-    position: absolute; content: ""; height: 26px; width: 26px;
-    left: 4px; bottom: 4px; background-color: white;
-    transition: .4s; border-radius: 50%;
-}
-
-input:checked + .slider { background-color: var(--success); }
-input:checked + .slider:before { transform: translateX(26px); }
-/* Hiệu ứng Glow cho Switch */
-input:checked + .slider { box-shadow: 0 0 15px var(--success); }
-input:not(:checked) + .slider { box-shadow: 0 0 15px #ff453a; }
-
-/* Style cho các ô bị khóa 24/02/2026*/
-input:disabled,
-select:disabled,
-textarea:disabled {
-    background: rgba(255, 255, 255, 0.05) !important;
-    color: #888 !important;
-    cursor: not-allowed;
-    border: 1px dashed rgba(255, 255, 255, 0.1) !important;
-}
-/* Nút bấm bị khóa */
-button:disabled {
-    filter: grayscale(1);
-    opacity: 0.5;
-    cursor: not-allowed;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-/*DASHBOARD HIỂN THỊ 24/02/2026*/
+/* =========================================
+   NOTE: DASHBOARD THỐNG KÊ NHANH
+   ========================================= */
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
     margin-bottom: 30px;
 }
+
 .dash-card {
     background: var(--card-bg);
     border: 1px solid var(--glass-border);
@@ -489,10 +90,12 @@ button:disabled {
     backdrop-filter: blur(10px);
     transition: 0.3s;
 }
+
 .dash-card:hover {
     transform: translateY(-5px);
     background: rgba(255, 255, 255, 0.1);
 }
+
 .dash-icon {
     font-size: 32px;
     background: rgba(255, 255, 255, 0.05);
@@ -503,32 +106,408 @@ button:disabled {
     justify-content: center;
     border-radius: 15px;
 }
+
 .dash-label {
     font-size: 10px;
     color: var(--text-dim);
     font-weight: 800;
     letter-spacing: 1px;
 }
-.dash-info h2 {
-    margin: 0;
-    font-size: 24px;
-    color: #fff;
+
+.dash-info h2 { margin: 0; font-size: 24px; color: #fff; }
+
+/* =========================================
+   NOTE: CẤU TRÚC GLASS CARD (KHUNG CHUNG)
+   ========================================= */
+.glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    transition: all 0.5s ease;
 }
-/*QUẢN LÝ BOM*/
-.bom-container {
-    background: rgba(255, 255, 255, 0.05);
+
+.card-head { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+.step-num { font-size: 12px; color: var(--primary); font-weight: 800; opacity: 0.5; }
+.card-head h3 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+
+/* =========================================
+   NOTE: FORM ELEMENTS (INPUT, SELECT, UI)
+   ========================================= */
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.selection-group, .field-group { margin-top: 25px; display: flex; flex-direction: column; }
+
+.field label { 
+    display: block; font-size: 11px; color: var(--text-dim); 
+    margin-bottom: 8px; font-weight: 600; text-transform: uppercase; 
+}
+
+input, select, textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
-    padding: 15px;
-    margin-top: 15px;
-    border: 1px dashed var(--primary);
+    padding: 12px 16px;
+    color: white;
+    font-size: 14px;
+    transition: 0.3s;
 }
-.bom-table th {
-    background: rgba(var(--primary-rgb), 0.1);
-    font-size: 11px;
+
+input:focus, select:focus { 
+    outline: none; 
+    border: 2px solid var(--primary) !important; 
+    background: rgba(0, 210, 255, 0.1) !important; 
 }
-.bom-note {
+
+/* Tối ưu dropdown cho công nhân */
+select option { background-color: #1a1a1a; color: #ffffff; padding: 10px; }
+
+#activeBatches {
+    font-weight: bold;
+    color: #2c3e50;
+    background-color: #f8f9fa;
+    border: 2px solid var(--primary);
+}
+
+/* =========================================
+   NOTE: HỆ THỐNG BẢNG (LUXURY TABLE)
+   ========================================= */
+/* 1. Khung bao bọc bảng */
+.table-wrapper { 
+    margin: 20px 0; 
+    border-radius: 12px; 
+    overflow: hidden; 
+    border: 1px solid rgba(255,255,255,0.1); 
+}
+
+/* 2. Cấu trúc bảng chính */
+.luxury-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    background: rgba(0,0,0,0.3); 
+}
+
+/* 3. Tiêu đề bảng: Ép sáng rực rỡ và to rõ */
+.luxury-table thead th {
+    background-color: #2c3e50 !important; /* Nền xanh xám chuyên nghiệp */
+    color: #FFD700 !important;           /* Màu Vàng Gold cực kỳ nổi bật */
+    font-size: 16px !important;          /* Chữ to dễ đọc */
+    font-weight: 800 !important;         /* Chữ siêu đậm */
+    padding: 15px 10px !important;
+    text-transform: uppercase;
+    text-align: center;
+    border-bottom: 3px solid #FFD700 !important;
+}
+
+/* 4. Ô nội dung bên dưới */
+.luxury-table td { 
+    padding: 12px 8px; 
+    border-top: 1px solid rgba(255,255,255,0.1); 
+    vertical-align: middle;
+}
+
+/* 5. Input và Select: Tăng độ tương phản để công nhân dễ nhập */
+.luxury-table input, 
+.luxury-table select {
+    width: 100%;
+    height: 45px;             /* Độ cao vừa đủ để bấm tay */
+    font-size: 16px !important;
+    background: #ffffff !important; /* Nền trắng hẳn */
+    color: #000000 !important;      /* Chữ đen hẳn */
+    border: 1px solid #ccc !important;
+    border-radius: 6px;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+/* 6. Riêng ô Nguyên liệu (Chỉ đọc) */
+.luxury-table input[readonly] {
+    background: #e9ecef !important; /* Màu xám nhạt để biết là không sửa được */
+    color: #2c3e50 !important;      /* Chữ đậm màu xanh than */
+    font-weight: bold;
+    border: none !important;
+}
+
+/* 7. Các chi tiết phụ khác */
+.c-unit-label { font-size: 15px; color: #FFD700; font-weight: bold; margin-left: 5px; }
+.btn-delete { font-size: 20px; color: #ff4d4d; background: none; border: none; cursor: pointer; }
+/* =========================================
+   NOTE: NÚT BẤM (BUTTONS) & HIỆU ỨNG GLOW
+   ========================================= */
+.btn-glow {
+    width: 100%; margin-top: 20px; padding: 16px; border-radius: 14px; border: none;
+    font-weight: 800; font-size: 13px; letter-spacing: 1px; cursor: pointer; transition: 0.3s;
+}
+
+.btn-glow.primary { background: var(--primary); color: #000; box-shadow: 0 8px 25px rgba(0, 210, 255, 0.4); }
+.btn-glow.orange { background: var(--orange); color: #000; box-shadow: 0 8px 25px rgba(255, 159, 10, 0.4); }
+.btn-glow.success { background: var(--success); color: #000; box-shadow: 0 8px 25px rgba(50, 215, 75, 0.4); }
+.btn-glow:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+
+.btn-outline { 
+    background: transparent; border: 1px solid var(--glass-border); 
+    color: white; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; height: 48px;
+}
+
+.btn-delete {
+    background: rgba(255, 69, 58, 0.2); border: 1px solid var(--error);
+    color: var(--error); width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+}
+.btn-add-row {
+    background-color: #28a745 !important; /* Màu xanh lá bắt mắt */
+    color: white !important;
+    font-weight: bold !important;
+    border: none !important;
+    padding: 8px 15px !important;
     margin-top: 10px;
-    padding: 8px;
-    border-left: 3px solid #ffcc00;
+    border-radius: 5px;
+    cursor: pointer;
+}
+/* =========================================
+   NOTE: CHỨC NĂNG QUÉT QR & MODAL CAMERA
+   ========================================= */
+.input-with-button { display: flex; gap: 10px; align-items: center; }
+
+.btn-scan {
+    background: var(--primary); color: #000; border: none; border-radius: 12px;
+    padding: 0 20px; height: 48px; font-weight: 800; font-size: 12px;
+    display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; transition: 0.3s;
+}
+
+.camera-modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10000;
+    justify-content: center; align-items: center;
+}
+
+.camera-content {
+    background: var(--card-bg); padding: 20px; border-radius: 24px;
+    border: 1px solid var(--glass-border); width: 90%; max-width: 400px; text-align: center;
+}
+
+#reader { width: 100%; border-radius: 15px; overflow: hidden; margin-bottom: 15px; }
+
+/* =========================================
+   NOTE: KIỂM ĐỊNH (QC) & TOGGLE SWITCH
+   ========================================= */
+.status-toggle-container {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 50px;
+}
+
+.status-label { font-weight: 800; font-size: 12px; transition: 0.3s; opacity: 0.3; }
+.status-label.pass { color: var(--success); }
+.status-label.fail { color: var(--error); }
+
+.switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--error); transition: .4s; border-radius: 34px;
+    box-shadow: 0 0 15px var(--error);
+}
+
+.slider:before {
+    position: absolute; content: ""; height: 26px; width: 26px;
+    left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;
+}
+
+input:checked + .slider { background-color: var(--success); box-shadow: 0 0 15px var(--success); }
+input:checked + .slider:before { transform: translateX(26px); }
+#qcFinalYield:focus {
+    border: 2px solid #FFD700 !important;
+    outline: none;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+/* =========================================
+   NOTE: QUẢN LÝ BOM (ĐỊNH MỨC)
+   ========================================= */
+.bom-container {
+    background: rgba(255, 255, 255, 0.05); border-radius: 12px;
+    padding: 15px; margin-top: 15px; border: 1px dashed var(--primary);
+}
+
+.bom-note {
+    margin-top: 10px; padding: 8px; border-left: 3px solid #ffcc00;
     background: rgba(255, 204, 0, 0.1);
+}
+.bom-controls {
+    display: flex;       /* Kích hoạt chế độ hàng ngang */
+    gap: 10px;          /* Khoảng cách giữa ô chọn và nút */
+    align-items: center; /* Căn giữa theo chiều dọc */
+    margin-bottom: 15px; /* Khoảng cách với bảng bên dưới */
+    width: 100%;
+}
+
+#bomSelectorOperate {
+    flex: 1;            /* Ô chọn sẽ chiếm hết phần không gian trống còn lại */
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #2a2a2a;
+    color: white;
+}
+
+.btn-apply {
+    white-space: nowrap; /* Không cho chữ trong nút bị xuống dòng */
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-apply:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+/* =========================================
+   NOTE: TRẠNG THÁI KHÓA & THÔNG BÁO (TOAST)
+   ========================================= */
+/* Khóa Section */
+.glass-card[style*="pointer-events: none"] { filter: grayscale(0.8); position: relative; }
+.glass-card[style*="pointer-events: none"]::after {
+    content: "🔒 ĐANG KHÓA"; position: absolute; top: 10px; right: 20px;
+    font-size: 10px; color: var(--text-dim);
+}
+
+/* Disabled states */
+input:disabled, select:disabled, textarea:disabled, button:disabled {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #888 !important; cursor: not-allowed;
+}
+
+/* Toast System */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+.toast {
+    background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2); color: white;
+    padding: 16px 25px; border-radius: 15px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600;
+    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--error); }
+.toast.warning { border-left: 4px solid var(--orange); }
+/* =========================================
+   NOTE: NÂNG CẤP NÚT TẢI PDF
+   ========================================= */
+.search-flex {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.btn-icon {
+    background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+    color: #050b18;
+    border: none;
+    border-radius: 12px;
+    padding: 0 25px;
+    height: 48px; /* Khớp với các input khác */
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.btn-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.4);
+    background: #ffffff;
+}
+
+.btn-icon::before {
+    content: '📄'; /* Icon đơn giản hoặc bạn dùng FontAwesome */
+    font-size: 18px;
+}
+/* =========================================
+   NOTE: RESPONSIVE - TỐI ƯU MÁY TÍNH BẢNG (TABLET)
+   ========================================= */
+
+/* Cho màn hình nhỏ hơn 1024px (iPad/Tablet) */
+@media (max-width: 1024px) {
+    .container {
+        padding: 20px 15px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr); /* Chia 2 cột thay vì 3 */
+    }
+
+    .main-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+}
+
+/* Cho màn hình nhỏ hơn 768px (Mobile & Tablet nhỏ) */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr; /* Dashboard thành 1 hàng dọc */
+    }
+
+    .input-row {
+        grid-template-columns: 1fr; /* Form nhập liệu thành 1 hàng dọc */
+    }
+
+    .status-workflow {
+        flex-wrap: wrap; /* Các badge trạng thái tự xuống dòng */
+        justify-content: center;
+    }
+
+    .connector {
+        display: none; /* Ẩn thanh nối khi ở màn hình nhỏ cho gọn */
+    }
+
+    .glass-card {
+        padding: 20px;
+    }
+
+    /* Tối ưu bảng trên thiết bị di động (Cuộn ngang) */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .luxury-table {
+        min-width: 600px; /* Đảm bảo bảng không bị bẹp rúm */
+    }
+
+    .search-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-icon {
+        justify-content: center;
+    }
+}
+
+/* Tăng kích thước vùng bấm cho các nút nhỏ trên cảm ứng */
+@media (pointer: coarse) {
+    .btn-outline, .btn-glow, .btn-scan, .btn-icon {
+        min-height: 55px; /* Dễ bấm hơn khi tay dính bụi hoặc đeo găng tay mỏng */
+    }
 }

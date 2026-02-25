@@ -69,54 +69,29 @@
                         <input type="text" id="orderID" placeholder="ORD-9921">
                     </div>
                 </div>
-                <div class="field" style="margin-top: 20px;">
-                    <label>SẢN PHẨM (SKU)</label>
-                    <input type="text" id="skuID" placeholder="Tên sản phẩm / SKU">
-                </div>
                 <button onclick="initBatch()" class="btn-glow primary">KÍCH HOẠT HỒ SƠ</button>
-            </section>
-            <section class="glass-card section-bom">
-                <div class="card-head">
-                    <span class="step-num">BOM</span>
-                    <h3>Tra cứu Định mức & Công thức</h3>
-                </div>
-                <div class="selection-group">
-                    <label>Chọn Sản phẩm (SKU) để xem công thức</label>
-                    <select id="bomSelector" onchange="displayBOM(this.value)">
-                        <option value="">-- CHỌN SKU --</option>
-                        <option value="SKU-001">Sản phẩm A (Tiêu chuẩn)</option>
-                        <option value="SKU-002">Sản phẩm B (Cao cấp)</option>
-                    </select>
-                </div>
-                <div id="bomDisplay" class="bom-container" style="display: none;">
-                    <table class="luxury-table bom-table">
-                        <thead>
-                            <tr>
-                                <th>Nguyên liệu</th>
-                                <th>Tỉ lệ (%)</th>
-                                <th>Số lượng định mức (kg/lô)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bomBody">
-                            </tbody>
-                    </table>
-                    <div class="bom-note">
-                        <small>⚠️ *Lưu ý: Luôn kiểm tra hạn sử dụng của nguyên liệu trước khi đổ vào máy.*</small>
-                    </div>
-                </div>
             </section>
             <section class="glass-card section-2">
                 <div class="card-head">
                     <span class="step-num">02</span>
-                    <h3>Nhật ký Vận hành</h3>
+                    <h3>Vận hành Sản xuất</h3>
                 </div>
-                <div class="selection-group">
-                    <label>CHỌN LÔ VẬN HÀNH</label>
-                    <div class="input-with-button">
-                        <select id="activeBatches" onchange="loadBatchData(this.value)">
-                            <option value="">-- CHỌN MÃ LÔ --</option>
+
+                <div class="selection-group" style="margin-bottom: 15px;">
+                    <label>Chọn Lô đang sản xuất</label>
+                    <select id="activeBatches" class="glass-input" onchange="window.loadBatchData(this.value)">
+                        <option value="">-- CHỌN MÃ LÔ --</option>
+                    </select>
+                </div>
+
+                <div class="operation-header">
+                    <div class="bom-controls">
+                        <select id="bomSelectorOperate" class="mes-input">
+                            <option value="">-- CHỌN CÔNG THỨC (BOM) --</option>
                         </select>
-                        <button onclick="startScan('activeBatches')" class="btn-scan">QUÉT QR</button>
+                        <button onclick="window.applyBOMToTable()" class="btn-apply">
+                            <span>🚀</span> ÁP DỤNG BOM
+                        </button>
                     </div>
                 </div>
 
@@ -124,16 +99,17 @@
                     <table class="luxury-table">
                         <thead>
                             <tr>
-                                <th>CÔNG ĐOẠN</th>
-                                <th>NGUYÊN LIỆU</th>
-                                <th>LÔ RM</th>
-                                <th>SẢN LƯỢNG</th>
+                                <th>Công đoạn</th>
+                                <th>Nguyên liệu</th>
+                                <th>Lô NL (RM)</th>
+                                <th>Sản lượng</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody id="outputBody"></tbody>
                     </table>
                 </div>
+                
                 <div class="card-actions">
                     <button onclick="addRow('outputBody')" class="btn-outline">+ THÊM DÒNG</button>
                     <button onclick="saveProduction()" class="btn-glow orange">LƯU DỮ LIỆU</button>
@@ -149,6 +125,13 @@
                     <select id="qcBatchSelect" onchange="loadQCData(this.value)">
                         <option value="">-- CHỌN LÔ THẨM ĐỊNH --</option>
                     </select>
+                </div>
+                <div class="qc-final-input" style="margin-top: 15px;">
+                    <label style="color: #FFD700; font-weight: bold; display: block; margin-bottom: 5px;">
+                        📦 SẢN LƯỢNG THÀNH PHẨM (Mẻ/Kg/Lít):
+                    </label>
+                    <input type="number" id="qcFinalYield" step="0.01" placeholder="0.00" class="mes-input" 
+                           style="width: 100%; height: 45px; font-size: 18px; font-weight: bold; text-align: center; background: #fff; color: #000; border-radius: 8px;">
                 </div>
                 <div class="qc-grid">
                     <div class="status-toggle-container">

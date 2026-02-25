@@ -1,201 +1,256 @@
-
-// Đưa dòng này lên vị trí đầu tiên của file script
+/* ==========================================================================
+   BLOCK 0: CẤU HÌNH HỆ THỐNG (BỎ SKU KHI KHỞI TẠO)
+   ========================================================================== */
 window.db = window.db || [];
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjv09fsvCKdzwDrAxxKkmmDSNogXaNKY3SHwa9-2j_ADu2g-v4-DaCP3gpV50uunAFTw/exec";
-// Ép định nghĩa thư viện nếu nó nạp chậm
-window.onload = function() {
-    setTimeout(() => {
-        if (window.jspdf && window.jspdfAutotable) {
-            window.jspdf.jsPDF.API.autoTable = window.jspdfAutotable.default || window.jspdfAutotable;
-            console.log("✅ Hệ thống PDF đã sẵn sàng từ lúc khởi động!");
-        }
-    }, 1000); // Đợi 1 giây sau khi load trang để thư viện kịp ngấm
-};
-// Hàm lưu db vào bộ nhớ trình duyệt (24/02/2026)
-window.saveToLocal = function() {
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxe8p8v8ONI_fhVJu3xQ0i9-1RAYoj1YAtomugQ98ekcpZp1Ujn7wl1ewHc8hW2zCNH4Q/exec";
+const API_SECRET_TOKEN = "MES_PRO_SECRET_2026"; 
+let GLOBAL_BOM = {}; 
+let html5QrCode;
+
+/* ==========================================================================
+   BLOCK 1: DATA ENGINE (GIỮ NGUYÊN)
+   ========================================================================== */
+window.sendToDatabase = async function(payload) {
     try {
-        localStorage.setItem('mes_db_backup', JSON.stringify(db));
-        console.log("💾 Đã lưu bản sao cục bộ thành công.");
-    } catch (e) {
-        console.error("❌ Không thể lưu vào LocalStorage:", e);
-    }
+        payload.token = API_SECRET_TOKEN; 
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST", mode: "no-cors", cache: "no-cache",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(payload)
+        });
+        return true; 
+    } catch (e) { return false; }
 };
 
-// Hàm khôi phục dữ liệu khi vừa mở trang (nên gọi khi khởi tạo app)
+window.saveToLocal = function() { localStorage.setItem('mes_db_backup', JSON.stringify(window.db)); };
 window.loadFromLocal = function() {
     const saved = localStorage.getItem('mes_db_backup');
-    if (saved) {
-        db = JSON.parse(saved);
-        window.updateBatchSelector();
-        window.updateDashboard();
-        console.log("🔄 Đã khôi phục dữ liệu từ phiên làm việc trước.");
-    }
+    if (saved) { window.db = JSON.parse(saved); window.updateBatchSelector(); window.updateDashboard(); }
 };
-// hàm load dữ liệu từ GGSHEET và đổ vào selection CHỌN LÔ VẬN HÀNH (24/02/2026)
+// Hàm tải danh sách các lô đã tồn tại từ Server
+// 1. Hàm nạp danh sách lô từ Server
 window.loadExistingBatches = async function() {
-    console.log("🚀 Đang tải dữ liệu từ Google Sheets...");
-    
-    // 1. Hiển thị trạng thái chờ trên giao diện
-    const selector = document.getElementById('activeBatches');
-    if (selector) {
-        selector.innerHTML = '<option value="">⏳ Đang đồng bộ dữ liệu...</option>';
-    }
-
     try {
-        // 2. Gọi API từ Cloud (Thêm timestamp để tránh cache dữ liệu cũ)
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_batches&t=${Date.now()}`);
+        // Gọi action 'read' đã sửa ở Apps Script
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=read`);
+        const data = await response.json();
         
-        if (!response.ok) throw new Error("Phản hồi từ Server không tốt");
-        
-        const remoteData = await response.json();
-        
-        if (remoteData && Array.isArray(remoteData)) {
-            // 3. QUAN TRỌNG: Gán vào window.db để tất cả các hàm khác (như PDF) đều thấy
-            window.db = remoteData; 
-            
-            // 4. Lưu bản sao vào máy cục bộ (LocalStorage)
-            window.saveToLocal(); 
-            
-            // 5. Cập nhật giao diện
+        if (Array.isArray(data)) {
+            window.db = data;
             window.updateBatchSelector();
-            window.updateDashboard(); 
-            
-            window.showToast("Đồng bộ dữ liệu thành công!", "success");
-            console.log("✅ Dữ liệu đã nạp vào window.db:", window.db);
+            window.updateDashboard();
         }
     } catch (e) {
-        console.error("❌ Lỗi kết nối Server:", e);
-        
-        // 6. Xử lý khi lỗi mạng: Khôi phục từ LocalStorage
-        window.loadFromLocal(); 
-        
-        if (window.db && window.db.length > 0) {
-            window.showToast("Mất kết nối. Đã dùng dữ liệu offline.", "warning");
-        } else {
-            window.showToast("Không thể tải dữ liệu. Kiểm tra internet!", "error");
-            if (selector) selector.innerHTML = '<option value="">❌ Lỗi tải dữ liệu</option>';
-        }
+        console.error("CORS hoặc Lỗi kết nối:", e);
     }
 };
 
-// Tự động chạy khi vừa load trang xong
-window.addEventListener('DOMContentLoaded', window.loadExistingBatches);
-// --- HÀM 1: KHỞI TẠO LÔ (QUẢN ĐỐC) ---24/02/2026
-window.initBatch = async function() {
-    console.log("Đang khởi tạo lô...");
-    const batchEl = document.getElementById('batchID');
-    const orderEl = document.getElementById('orderID');
-    const skuEl = document.getElementById('skuID');
+// 2. Hàm xử lý khi chọn một lô hàng (Fix lỗi "is not a function")
+window.loadBatchData = function(batchId) {
+    if (!batchId) return;
+    console.log("Đang xem lô:", batchId);
+    // Tại đây bạn có thể thêm logic hiển thị thông tin chi tiết lô nếu muốn
+};
 
-    if (!batchEl || !skuEl) {
-        window.showToast("Lỗi: Không tìm thấy ô nhập liệu!", "error");
-        return;
+// 3. Hàm áp dụng BOM vào bảng (Sửa lỗi ID null)
+// HÀM QUAN TRỌNG: Đổ dữ liệu từ BOM vào bảng Nhật ký
+window.applyBOMToTable = function() {
+    // 1. Lấy phần tử trực tiếp bên trong hàm để đảm bảo không bị null
+    const bomEl = document.getElementById('bomSelectorOperate'); 
+    const batchEl = document.getElementById('activeBatches');
+    const tbody = document.getElementById('outputBody');
+
+    // Kiểm tra xem các phần tử có tồn tại trong HTML không
+    if (!bomEl || !batchEl || !tbody) {
+        console.error("Thiếu phần tử HTML:", { bomEl, batchEl, tbody });
+        return window.showToast("Lỗi hệ thống: Không tìm thấy bảng nhập liệu!", "error");
     }
 
-    const bVal = batchEl.value.trim();
-    const oVal = orderEl ? orderEl.value.trim() : "";
-    const sVal = skuEl.value.trim();
+    const sku = bomEl.value;
+    const bId = batchEl.value;
+    
+    if(!bId) return window.showToast("⚠️ Vui lòng chọn Mã Lô vận hành!", "warning");
+    if(!sku) return window.showToast("⚠️ Vui lòng chọn công thức!", "warning");
 
-    if(!bVal || !sVal) return window.showToast("Vui lòng nhập đầy đủ Mã Lô và SKU!", "warning");
+    // Kiểm tra dữ liệu BOM có tồn tại trong bộ nhớ không
+    console.log("Đang áp dụng SKU:", sku);
+    console.log("Dữ liệu trong GLOBAL_BOM:", GLOBAL_BOM[sku]);
+
+    if(!GLOBAL_BOM[sku]) {
+        return window.showToast("❌ Không tìm thấy dữ liệu định mức cho mã này!", "error");
+    }
+
+    // Xóa sạch bảng hiện tại
+    tbody.innerHTML = ''; 
+
+    // Duyệt qua mảng nguyên liệu của SKU đó
+    GLOBAL_BOM[sku].forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+              <select class="c-step" style="width:100%">
+                  <option value="${item.process || 'Cân'}" selected>⚖️ ${item.process || 'Cân'}</option>
+                  <option value="Trộn">🌀 Trộn</option>
+                  <option value="Chiết rót">🧪 Chiết rót</option>
+                  <option value="Đóng gói">📦 Đóng gói</option>
+                  <option value="Dán nhãn">🏷️ Dán nhãn</option>
+              </select>
+            </td>
+            <td><input type="text" class="c-rm" value="${item.name || ''}" readonly style="background:rgba(255,255,255,0.05)"></td>
+            <td><input type="text" class="c-lot" placeholder="Nhập lô NL"></td>
+            <td>
+                <div style="display:flex; gap:5px; align-items:center;">
+                    <input type="number" class="c-out" value="${item.amount || 0}" style="width:70px">
+                    <span style="font-size:11px">kg</span>
+                </div>
+            </td>
+            <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    window.showToast(`✅ Đã áp dụng định mức cho ${sku}`, "success");
+};
+/* ==========================================================================
+   BLOCK 2: MỤC 01 - QUẢN ĐỐC (ĐÃ LOẠI BỎ SKU)
+   ========================================================================== */
+window.initBatch = async function() {
+    const batchEl = document.getElementById('batchID');
+    const orderEl = document.getElementById('orderID');
+
+    if(!batchEl || !batchEl.value) return window.showToast("Vui lòng nhập Mã Lô!", "warning");
 
     const payload = {
         action: 'init',
-        batch_id: bVal,
-        order_id: oVal,
-        sku_id: sVal
+        batch_id: batchEl.value.trim(),
+        order_id: orderEl ? orderEl.value.trim() : ""
     };
 
-    // 1. Gửi dữ liệu lên Server và hứng kết quả vào biến 'result'
-    window.showToast("Đang kích hoạt hồ sơ trên hệ thống...", "warning");
-    const result = await window.sendToDatabase(payload); 
-
-    // 2. Kiểm tra biến 'result' thay vì 'success'
-    if (result) {
-        // Cập nhật Database cục bộ
-        db.push({
-            batch_id: bVal,
-            order_id: oVal,
-            sku_id: sVal,
+    window.showToast("Đang kích hoạt hồ sơ...", "warning");
+    
+    const success = await window.sendToDatabase(payload);
+    if (success) {
+        // Cập nhật tạm thời vào DB cục bộ
+        window.db.push({
+            batch_id: payload.batch_id,
+            order_id: payload.order_id,
             status: 'Created',
             outputLogs: []
         });
-
-        window.saveToLocal(); // Lưu backup vào trình duyệt
-        window.updateBatchSelector(); // Cập nhật dropdown
-        window.updateDashboard(); // Cập nhật con số dashboard
         
+        window.saveToLocal();
+        window.updateBatchSelector();
+        window.updateDashboard();
         window.showToast("Kích hoạt hồ sơ thành công!", "success");
         
-        // Reset form để nhập lô tiếp theo
         batchEl.value = "";
-        if(orderEl) orderEl.value = "";
-        skuEl.value = "";
+        if (orderEl) orderEl.value = "";
 
-        // Đồng bộ lại danh sách từ server cho chắc chắn
-        await window.loadExistingBatches(); 
+        // Gọi tải lại dữ liệu từ server (nếu hàm tồn tại)
+        if (typeof window.loadExistingBatches === 'function') {
+            await window.loadExistingBatches();
+        }
     } else {
-        window.showToast("Lỗi kết nối Server! Vui lòng thử lại.", "error");
+        window.showToast("Lỗi kết nối máy chủ!", "error");
     }
 };
-// ---HÀM: QUẢN LÝ BOM ---
-let GLOBAL_BOM = {}; // Biến lưu trữ BOM tải từ Sheets
 
-// Hàm tải BOM từ Google Sheets
+/* ==========================================================================
+   BLOCK 3: MỤC 02 - VẬN HÀNH & TRA CỨU BOM (GỘP BOM VÀO BẢNG)
+   ========================================================================== */
 window.loadBOMFromServer = async function() {
     try {
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_bom`);
-        const data = await response.json();
-        GLOBAL_BOM = data;
+        // Chờ nhận dữ liệu JSON từ Apps Script
+        GLOBAL_BOM = await response.json(); 
         
-        // Cập nhật các tùy chọn vào dropdown bomSelector
-        const selector = document.getElementById('bomSelector');
-        selector.innerHTML = '<option value="">-- CHỌN SKU --</option>';
-        Object.keys(GLOBAL_BOM).forEach(sku => {
-            selector.innerHTML += `<option value="${sku}">${sku}</option>`;
-        });
-        
-        console.log("✅ Đã tải định mức BOM thành công.");
-    } catch (e) {
-        console.error("❌ Không thể tải BOM:", e);
+        console.log("Dữ liệu BOM nhận được:", GLOBAL_BOM); // Kiểm tra trong Console F12
+
+        const selector = document.getElementById('bomSelectorOperate'); 
+        if(selector) {
+            // Xóa sạch options cũ
+            selector.innerHTML = '<option value="">-- CHỌN CÔNG THỨC (BOM) --</option>';
+            
+            // Lấy danh sách SKU từ các Key của Object GLOBAL_BOM
+            const skus = Object.keys(GLOBAL_BOM);
+            
+            if (skus.length === 0) {
+                console.warn("Cảnh báo: Sheet BOM trống hoặc không tìm thấy dữ liệu.");
+                return;
+            }
+
+            skus.forEach(sku => {
+                const opt = document.createElement('option');
+                opt.value = sku.trim(); // Loại bỏ khoảng trắng thừa
+                opt.textContent = sku.trim();
+                selector.appendChild(opt);
+            });
+            
+            window.showToast("Đã cập nhật danh sách BOM mới nhất", "info");
+        }
+    } catch (e) { 
+        console.error("Lỗi khi kết nối lấy BOM:", e);
+        window.showToast("Không thể tải danh sách BOM!", "error");
     }
 };
 
-// Sửa lại hàm hiển thị BOM
-window.displayBOM = function(sku) {
-    const displayArea = document.getElementById('bomDisplay');
-    const body = document.getElementById('bomBody');
+// HÀM QUAN TRỌNG: Đổ dữ liệu từ BOM vào bảng Nhật ký
+window.applyBOMToTable = function() {
+    const bomEl = document.getElementById('bomSelectorOperate'); // ID đã đổi
+    const batchEl = document.getElementById('activeBatches');
+    const tbody = document.getElementById('outputBody');
+
+    if (!bomEl || !batchEl) return;
+
+    const sku = bomEl.value;
+    const bId = batchEl.value;
     
-    if (!sku || !GLOBAL_BOM[sku]) {
-        displayArea.style.display = 'none';
-        return;
-    }
+    if(!bId) return window.showToast("⚠️ Vui lòng chọn Mã Lô vận hành!", "warning");
+    if(!sku) return window.showToast("⚠️ Vui lòng chọn công thức!", "warning");
 
-    body.innerHTML = GLOBAL_BOM[sku].map(item => `
-        <tr>
-            <td style="font-weight: 600;">${item.name}</td>
-            <td>${item.ratio}</td>
-            <td style="color: var(--primary); font-weight: 800;">${item.amount}</td>
-        </tr>
-    `).join('');
-
-    displayArea.style.display = 'block';
+    tbody.innerHTML = ''; 
+    GLOBAL_BOM[sku].forEach(item => {
+        const row = document.createElement('tr');
+        // Tìm đoạn row.innerHTML trong hàm applyBOMToTable và thay bằng:
+        row.innerHTML = `
+            <td>
+                <select class="c-step">
+                    <option value="${item.process || 'Cân'}">${item.process || 'Cân'}</option>
+                    <option value="Trộn">Trộn</option>
+                    <option value="Chiết">Chiết</option>
+                </select>
+            </td>
+            <td><input type="text" class="c-rm" value="${item.name}" readonly></td>
+            <td><input type="text" class="c-lot" placeholder="NHẬP LÔ NL..."></td>
+            <td>
+            // Thay thế đoạn input sản lượng trong row.innerHTML:
+            <td>
+                <div style="display:flex; gap:5px; align-items:center;">
+                    <input type="number" 
+                           class="c-out" 
+                           value="${item.amount}" 
+                           step="0.01" 
+                           placeholder="0.00"
+                           style="width:90px">
+                    <span class="c-unit-label">kg</span>
+                </div>
+            </td>
+            </td>
+            <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+    window.showToast("✅ Đã áp dụng định mức!");
 };
 
-// Gọi hàm tải khi bắt đầu ứng dụng
-window.loadBOMFromServer();
-
-// --- HÀM 2: LƯU SẢN XUẤT (VẬN HÀNH) ---
 window.saveProduction = async function() {
     const bId = document.getElementById('activeBatches').value;
-    const batch = db.find(b => b.batch_id === bId); 
-    
-    if(!batch) return showToast("Vui lòng chọn một Lô để lưu!");
+    const batch = window.db.find(b => b.batch_id === bId); 
+    if(!batch) return;
 
     const rows = document.querySelectorAll('#outputBody tr');
     const outputLogs = Array.from(rows).map(r => ({
         batch_id: bId,
-        order_id: batch.order_id, 
-        sku_id: batch.sku_id,
         ingridient: r.querySelector('.c-rm')?.value,
         rm_batch_id: r.querySelector('.c-lot')?.value,
         input: r.querySelector('.c-out')?.value, 
@@ -203,522 +258,232 @@ window.saveProduction = async function() {
         timestamp: new Date().toLocaleString('vi-VN')
     }));
 
-    const payload = {
-        action: 'save',
-        batch_id: bId,
-        output: outputLogs,
-        // THÊM PHẦN AUDIT LOG
-        audit: {
-            user: "Công nhân vận hành", // Sau này bạn có thể thay bằng tên đăng nhập
-            action: "Cập nhật sản lượng",
-            timestamp: new Date().toLocaleString('vi-VN')
-        }
-    };
-
-    const success = await window.sendToDatabase(payload);
-    if(success) {
+    if(await window.sendToDatabase({ action: 'save', batch_id: bId, output: outputLogs })) {
         batch.status = 'Produced';
-        saveToLocal(); /*(24/02/2026) */
+        batch.outputLogs = outputLogs;
+        window.saveToLocal();
         window.updateBadgeStatus(batch);
-        showToast("💾 Đã lưu Nhật ký sản xuất thành công!");
+        window.showToast("💾 Đã lưu dữ liệu sản xuất!");
     }
 };
-//HÀM HIỂN THỊ AUDIT
-window.addAuditToUI = function(msg) {
-    const logContainer = document.getElementById('quick-logs'); // Nếu bạn có một div id này
-    if (logContainer) {
-        const entry = document.createElement('div');
-        entry.style.fontSize = "11px";
-        entry.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-        entry.style.padding = "5px 0";
-        entry.innerHTML = `<span style="color:var(--primary)">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
-        logContainer.prepend(entry);
-    }
-};
-// --- HÀM 3: HÀM GỬI DATA (CHỐNG TREO) ---
-// 1. Khai báo khóa bí mật ở đầu file (phải khớp với mã trong Google Apps Script)
-const API_SECRET_TOKEN = "MES_PRO_SECRET_2026"; 
+/* ==========================================================================
+   BLOCK 4: MỤC 03 - KIỂM ĐỊNH (QC)
+   ========================================================================== */
 
-// 2. Hàm gửi dữ liệu duy nhất đã được tối ưu
-window.sendToDatabase = async function(payload) {
-    console.log("🚀 Đang gửi dữ liệu lên Server...", payload.action);
+// 1. Hàm tải dữ liệu của lô cần kiểm định
+window.loadQCData = function(batchId) {
+    if (!batchId) return;
     
-    try {
-        payload.token = API_SECRET_TOKEN; 
-
-        // SỬA TẠI ĐÂY: Thêm mode 'no-cors' và đổi Content-Type
-        await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors", 
-            cache: "no-cache",
-            headers: {
-                "Content-Type": "text/plain", // Tránh kích hoạt kiểm tra CORS phức tạp
-            },
-            body: JSON.stringify(payload)
-        });
-
-        // Với no-cors, nếu không nhảy vào catch thì coi như gửi thành công
-        return true; 
-    } catch (e) {
-        console.error("❌ Lỗi gửi dữ liệu:", e);
-        if (window.showToast) {
-            window.showToast("Lỗi kết nối hoặc mất mạng!", "error");
-        }
-        return false;
-    }
-};
-
-// --- CÁC HÀM UI HỖ TRỢ (PHẢI CÓ window.) ---
-/*Cập nhật dropdown 24/02/2026 */
-window.addRow = function(target) {
-    const tbody = document.getElementById(target);
-    const row = document.createElement('tr');
-    
-    row.innerHTML = `
-        <td>
-            <select class="c-step">
-                <option value="Cân">⚖️ Cân</option>
-                <option value="Trộn">🌀 Trộn</option>
-                <option value="Chiết rót">🧪 Chiết rót</option>
-                <option value="Đóng gói">📦 Đóng gói</option>
-                <option value="Dán nhãn">🏷️ Dán nhãn</option>
-            </select>
-        </td>
-        <td><input type="text" class="c-rm" placeholder="Tên NVL"></td>
-        <td><input type="text" class="c-lot" placeholder="Lô RM"></td>
-        <td style="display: flex; gap: 5px;">
-            <input type="number" class="c-out" style="width: 70px;" placeholder="SL">
-            <select class="c-unit" style="width: 70px;">
-                <option value="Kg">Kg</option>
-                <option value="Gam">g</option>
-                <option value="Cái">Cái</option>
-                <option value="Lít">Lít</option>
-            </select>
-        </td>
-        <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>
-    `;
-    tbody.appendChild(row);
-};
-/*hiển thị đầy đủ thông tin như bạn muốn (bao gồm cả SKU và Status) 24/02/2026 */
-window.updateBatchSelector = function() {
-    const workerSelector = document.getElementById('activeBatches');
-    const qcSelector = document.getElementById('qcBatchSelect');
-    
-    const optionsHtml = db.map(batch => 
-        `<option value="${batch.batch_id}">${batch.batch_id} - ${batch.sku_id} [${batch.status}]</option>`
-    ).join('');
-
-    const defaultOption = '<option value="">-- CHỌN MÃ LÔ --</option>';
-
-    if (workerSelector) workerSelector.innerHTML = defaultOption + optionsHtml;
-    if (qcSelector) qcSelector.innerHTML = defaultOption + optionsHtml;
-};
-/*HÀM ADDROWEITH DATA ĐỂ HIỂN THỊ DỮ LIỆU CŨ */
-window.addRowWithData = function(target, log) {
-    const tbody = document.getElementById(target);
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>
-            <select class="c-step">
-                <option value="Cân" ${log.process === 'Cân' ? 'selected' : ''}>⚖️ Cân</option>
-                <option value="Trộn" ${log.process === 'Trộn' ? 'selected' : ''}>🌀 Trộn</option>
-                <option value="Chiết rót" ${log.process === 'Chiết rót' ? 'selected' : ''}>🧪 Chiết rót</option>
-                <option value="Đóng gói" ${log.process === 'Đóng gói' ? 'selected' : ''}>📦 Đóng gói</option>
-            </select>
-        </td>
-        <td><input type="text" class="c-rm" value="${log.ingridient || ''}"></td>
-        <td><input type="text" class="c-lot" value="${log.rm_batch_id || ''}"></td>
-        <td style="display: flex; gap: 5px;">
-            <input type="number" class="c-out" style="width: 70px;" value="${log.input || ''}">
-            <select class="c-unit" style="width: 70px;">
-                <option value="Kg" ${log.unit === 'Kg' ? 'selected' : ''}>Kg</option>
-                <option value="Gam" ${log.unit === 'Gam' ? 'selected' : ''}>g</option>
-            </select>
-        </td>
-        <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>
-    `;
-    tbody.appendChild(row);
-};
-/* Cập nhật hàm loadBatchData dành riêng cho CÔNG NHÂN (Mục 02) *24/02/2026*/
-window.loadBatchData = function(selectedId) {
-    if (!selectedId) {
-        window.controlSections('Locked');
-        return;
-    }
-    
-    const batch = db.find(b => b.batch_id === selectedId); 
+    const batch = window.db.find(b => b.batch_id === batchId);
     if (!batch) return;
 
-    // Chỉ cập nhật Badge và mở khóa Section liên quan đến Sản xuất
+    // Cập nhật trạng thái hiển thị (Badge)
     window.updateBadgeStatus(batch);
     
-    const tbody = document.getElementById('outputBody');
-    tbody.innerHTML = '';
-    
-    if (batch.outputLogs && batch.outputLogs.length > 0) {
-        batch.outputLogs.forEach(log => {
-            window.addRowWithData('outputBody', log);
-        });
-        
-        // NẾU LÔ CHƯA HOÀN THÀNH, TỰ ĐỘNG THÊM 1 DÒNG TRỐNG ĐỂ NHẬP TIẾP
-        if (batch.status !== 'Completed') {
-            window.addRow('outputBody');
-        }
-    } else {
-        window.addRow('outputBody');
+    // Nếu lô đã sản xuất, thông báo cho QC
+    if (batch.status === 'Produced') {
+        window.showToast(`Lô ${batchId} đã sẵn sàng kiểm định`, "info");
     }
-    
-    // LƯU Ý: Không đụng vào Toggle QC ở đây để tránh làm phiền QC
 };
 
-/* Cập nhật hàm loadQCData dành riêng cho QC (Mục 03) */
-window.loadQCData = function(selectedId) {
-    if (!selectedId) return;
-
-    const batch = db.find(b => b.batch_id === selectedId);
-    if (!batch) return;
-
-    // 1. Chỉ cập nhật Badge tương ứng với Lô QC đang chọn
-    window.updateBadgeStatus(batch);
-
-    // 2. Đồng bộ nút gạt Pass/Fail và Ghi chú từ dữ liệu cũ
-    window.syncQCToggle(batch.pqc_status || "Fail");
-    document.getElementById('qcNote').value = batch.note || "";
-
-    // 3. Tính toán sản lượng để đối soát
-    let total = 0;
-    if (batch.outputLogs) {
-        batch.outputLogs.forEach(log => total += Number(log.input) || 0);
-    }
-    
-    const yieldDisplay = document.getElementById('qcYieldDisplay');
-    if(yieldDisplay) yieldDisplay.textContent = total.toLocaleString('vi-VN');
-
-    showToast("QC đang kiểm tra lô: " + selectedId, "success");
-};
-
-// --- 3. QC XÁC NHẬN ---
-// Hàm chuyên trách cập nhật giao diện Toggle dựa trên giá trị (Pass/Fail)
-// --- HÀM 3: QC XÁC NHẬN HOÀN THÀNH ---
-window.syncQCToggle = function(status) {
+// 2. Hàm cập nhật văn bản hiển thị khi gạt nút Pass/Fail
+window.updateQCStatusText = function() {
     const toggle = document.getElementById('pqcToggle');
     const statusInput = document.getElementById('pqcStatus');
-    const labels = document.querySelectorAll('.status-label');
-
-    if (!toggle || !statusInput) return;
-
-    if (status === "Pass") {
-        toggle.checked = true;
-        statusInput.value = "Pass";
-        if(labels[1]) labels[1].classList.add('active'); // PASS hiện sáng
-        if(labels[0]) labels[0].classList.remove('active'); // FAIL mờ đi
-    } else {
-        toggle.checked = false;
-        statusInput.value = "Fail";
-        if(labels[0]) labels[0].classList.add('active'); // FAIL hiện sáng
-        if(labels[1]) labels[1].classList.remove('active'); // PASS mờ đi
-    }
+    // Nếu checkbox được tích (checked) là Pass, ngược lại là Fail
+    const status = toggle.checked ? "Pass" : "Fail";
+    
+    if(statusInput) statusInput.value = status;
+    
+    // Hiển thị toast để người dùng biết trạng thái đang chọn
+    const color = toggle.checked ? "#2ecc71" : "#e74c3c";
+    window.showToast(`Trạng thái: ${status.toUpperCase()}`, toggle.checked ? "success" : "error");
 };
+
+// 3. Hàm xác nhận hoàn thành và đẩy dữ liệu lên Cloud
 window.finalizeQC = async function() {
-    const bId = document.getElementById('qcBatchSelect')?.value;
-    if(!bId) return window.showToast("⚠️ QC vui lòng chọn một Mã Lô!", "warning");
+    const bId = document.getElementById('qcBatchSelect').value;
+    const pqcStatus = document.getElementById('pqcToggle').checked ? "Pass" : "Fail";
+    const note = document.getElementById('qcNote').value;
+    const finalYield = document.getElementById('qcFinalYield').value; // Lấy sản lượng thành phẩm
 
-    const batch = db.find(b => b.batch_id === bId);
-    if(!batch) return window.showToast("Lô không tồn tại!", "error");
-
-    const pqcStatus = document.getElementById('pqcStatus').value;
-    const qcNote = document.getElementById('qcNote').value;
-
-    // Ưu tiên tính total từ dữ liệu gốc trong db của lô đó để tránh lấy nhầm dữ liệu trên màn hình
-    let total = 0;
-    if (batch.outputLogs && batch.outputLogs.length > 0) {
-        batch.outputLogs.forEach(log => total += Number(log.input) || 0);
-    } else {
-        // Nếu db chưa có (đang load dở), mới quét trên UI Mục 02
-        document.querySelectorAll('.c-out').forEach(input => total += Number(input.value) || 0);
-    }
+    if (!bId) return window.showToast("⚠️ Vui lòng chọn mã lô cần thẩm định!", "warning");
+    if (!finalYield) return window.showToast("⚠️ Vui lòng nhập sản lượng thành phẩm!", "warning");
 
     const payload = {
         action: 'finalize',
         batch_id: bId,
-        total_output: total,
         pqc_status: pqcStatus,
-        note: qcNote,
-        completed_at: new Date().toLocaleString('vi-VN') // Thêm mốc thời gian chốt hồ sơ
+        note: note,
+        final_yield: finalYield // Gửi thêm trường sản lượng
     };
 
-    window.showToast("Đang gửi xác nhận QC...", "warning");
+    window.showToast("Đang xác nhận hoàn thành...", "warning");
+
     const success = await window.sendToDatabase(payload);
-    
-    if(success) {
-        batch.status = 'Completed'; 
-        batch.pqc_status = pqcStatus;
-        batch.note = qcNote;
-
+    if (success) {
+        const batch = window.db.find(b => b.batch_id === bId);
+        if (batch) {
+            batch.status = 'Completed';
+            batch.pqc_status = pqcStatus;
+            batch.final_yield = finalYield;
+        }
+        
         window.saveToLocal();
-        window.updateBadgeStatus(batch);
         window.updateBatchSelector();
-        window.updateDashboard(); // Đừng quên cập nhật con số Dashboard ở đây!
+        window.updateDashboard();
+        window.updateBadgeStatus(batch);
         
-        window.showToast(`Lô ${bId} đã hoàn thành & chốt hồ sơ!`, "success");
+        window.showToast("✅ ĐÃ HOÀN TẤT HỒ SƠ LÔ SẢN XUẤT!", "success");
+        
+        // Reset form
+        document.getElementById('qcNote').value = "";
+        document.getElementById('qcFinalYield').value = "";
     } else {
-        window.showToast("❌ Lỗi: Không thể gửi dữ liệu lên server!", "error");
+        window.showToast("Lỗi kết nối khi gửi dữ liệu QC!", "error");
     }
 };
-
-// Hàm này dùng cho sự kiện OnChange của Toggle trên giao diện
-window.updateQCStatusText = function() {
-    const isChecked = document.getElementById('pqcToggle').checked;
-    window.syncQCToggle(isChecked ? "Pass" : "Fail");
-};
-/* Cập nhật hàm theo dõi badge, và hàm mở khóa từng bước (24/02/2026)*/
-window.updateBadgeStatus = function(batch) {
-    const status = batch.status;
-    
-    // 1. Cập nhật các Badge (như cũ)
-    document.querySelectorAll('.badge').forEach(b => b.classList.remove('active'));
-    if (status === 'Created') document.getElementById('badge-supervisor')?.classList.add('active');
-    else if (status === 'Produced') document.getElementById('badge-operator')?.classList.add('active');
-    else if (status === 'Completed') document.getElementById('badge-qc')?.classList.add('active');
-
-    // 2. Gọi hàm điều khiển các Section
-    window.controlSections(status);
-};
-
-window.controlSections = function(status) {
-    const secProduction = document.querySelector('.section-2');
-    const secQC = document.querySelector('.section-3');
-
-    if (!secProduction || !secQC) return;
-
-    // Hàm hỗ trợ khóa/mở khóa element
-    const toggleInputs = (section, isDisable) => {
-        section.querySelectorAll('input, select, textarea, button').forEach(el => {
-            // KHÔNG BAO GIỜ khóa dropdown chọn lô và các nút điều hướng chính
-            if (el.id !== 'activeBatches' && el.id !== 'qcBatchSelect' && !el.classList.contains('btn-export')) {
-                el.disabled = isDisable;
-            }
-        });
-    };
-
-    // LOGIC ĐIỀU KHIỂN
-    if (status === 'Created') {
-        // Lô mới: Mở mục Sản xuất, Khóa mục QC
-        secProduction.style.opacity = "1";
-        secProduction.style.pointerEvents = "all";
-        toggleInputs(secProduction, false);
-
-        secQC.style.opacity = "0.4";
-        secQC.style.pointerEvents = "none";
-    } 
-    else if (status === 'Produced') {
-        // Đã SX: Mở cả 2 mục để QC vào làm việc
-        secProduction.style.opacity = "1";
-        secProduction.style.pointerEvents = "all";
-        secQC.style.opacity = "1";
-        secQC.style.pointerEvents = "all";
-        toggleInputs(secProduction, false);
-        toggleInputs(secQC, false);
-    }
-    else if (status === 'Completed') {
-        // Đã hoàn thành: Cho xem nhưng KHÓA NHẬP LIỆU
-        secProduction.style.opacity = "0.8";
-        secProduction.style.pointerEvents = "all";
-        secQC.style.opacity = "0.8";
-        secQC.style.pointerEvents = "all";
-        
-        toggleInputs(secProduction, true); 
-        toggleInputs(secQC, true);
-        
-        window.showToast("Hồ sơ đã chốt. Chỉ có quyền xem!", "warning");
-    }
-};
-
-/*Hàm thông báo toast 24/02/2026 */
-window.showToast = function(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    
-    // Chọn icon dựa trên loại thông báo
-    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
-    
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-    
-    container.appendChild(toast);
-
-    // Tự động xóa sau 4 giây
-    setTimeout(() => {
-        toast.style.animation = "slideIn 0.4s reverse forwards";
-        setTimeout(() => toast.remove(), 400);
-    }, 4000);
-};
-
-//5. Hàm xuất dữ liệu pdf 24/02/2026
+/* ==========================================================================
+   BLOCK 5: UI & HỆ THỐNG (UI HELPERS)
+   ========================================================================== */
+// Xuất PDF
 window.exportBatchPDF = function() {
     const searchId = document.getElementById('searchId')?.value.trim() || 
                      document.getElementById('qcBatchSelect')?.value || 
                      document.getElementById('activeBatches')?.value;
 
     const batch = (window.db || []).find(b => String(b.batch_id) === String(searchId));
-    if (!batch) return window.showToast("Không tìm thấy mã lô để xuất PDF!", "error");
+    if (!batch) return window.showToast("Không tìm thấy mã lô để xuất báo cáo!", "error");
 
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
-        // --- 1. HEADER CÔNG TY ---
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // 1. Vẽ Khung Viền Trang
+        doc.setDrawColor(44, 62, 80);
+        doc.setLineWidth(1);
+        doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
+
+        // 2. Header Công Ty
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(22);
-        doc.setTextColor(0, 123, 255); // Màu xanh Primary
-        doc.text("MES PRO MANUFACTURING", 105, 20, { align: "center" });
+        doc.setFontSize(18);
+        doc.setTextColor(44, 62, 80);
+        doc.text("MES PRO MANUFACTURING SYSTEM", pageWidth / 2, 20, { align: "center" });
         
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.setFont("helvetica", "normal");
-        doc.text("He thong Quan ly San xuat & Truy xuat Nguon goc", 105, 27, { align: "center" });
-        doc.line(14, 32, 196, 32); // Đường kẻ ngang
+        doc.text("Dia chi: Khu Cong Nghiep Cao, TP. Thu Duc, Viet Nam", pageWidth / 2, 26, { align: "center" });
+        doc.line(20, 30, pageWidth - 20, 30);
 
-        // --- 2. THÔNG TIN CHUNG ---
-        doc.setFontSize(12);
+        // 3. Tên Báo Cáo
+        doc.setFontSize(16);
+        doc.setTextColor(0, 102, 204);
+        doc.setFont("helvetica", "bold");
+        doc.text("PHIEU KIEM SOAT LO SAN XUAT", pageWidth / 2, 42, { align: "center" });
+        doc.text(`(E-BATCH RECORD: ${batch.batch_id})`, pageWidth / 2, 50, { align: "center" });
+
+        // 4. Thông Tin Chung
+        doc.setFontSize(11);
         doc.setTextColor(0);
-        doc.text("THONG TIN LO SAN XUAT", 14, 42);
-        
-        doc.setFontSize(10);
-        const infoY = 50;
-        doc.text(`Ma so Lo: ${batch.batch_id}`, 14, infoY);
-        doc.text(`Don hang: ${batch.order_id || 'N/A'}`, 14, infoY + 7);
-        doc.text(`San pham (SKU): ${batch.sku_id}`, 100, infoY);
-        doc.text(`Ngay tao: ${batch.timestamp || 'N/A'}`, 100, infoY + 7);
+        doc.text(`Ma Lo (Batch ID): ${batch.batch_id}`, 20, 65);
+        doc.text(`Ma Lenh (Order ID): ${batch.order_id || 'N/A'}`, 20, 72);
+        doc.text(`San Luong TP: ${batch.final_yield || '0'} kg`, 20, 79);
 
-        // --- 3. BẢNG NHẬT KÝ VẬN HÀNH ---
-        const logs = Array.isArray(batch.outputLogs) ? batch.outputLogs : [];
-        const tableData = logs.map((log, index) => [
-            index + 1,
-            log.process || '-',
-            log.ingridient || '-',
-            log.rm_batch_id || '-',
-            `${log.input || '0'} kg`,
-            log.timestamp || '-'
+        doc.text(`Ngay Xuat: ${new Date().toLocaleDateString('vi-VN')}`, 130, 65);
+        doc.text(`Trang Thai: ${batch.status}`, 130, 72);
+
+        // Xử lý logic QC
+        const rawStatus = batch.pqc_status ? String(batch.pqc_status).trim().toLowerCase() : "";
+        const qcResultDisplay = rawStatus ? rawStatus.toUpperCase() : "CHUA KIEM DINH";
+        doc.text(`Ket Qua QC: ${qcResultDisplay}`, 130, 79);
+
+        // 5. Bảng Nhật Ký Sản Xuất
+        const tableData = (batch.outputLogs || []).map((log, index) => [
+            index + 1, 
+            log.process || '-', 
+            log.ingridient || '-', 
+            log.rm_batch_id || '-', 
+            `${log.input || '0'} kg`, 
+            log.timestamp ? log.timestamp.split(',')[0] : '-'
         ]);
 
         doc.autoTable({
-            startY: 65,
-            head: [['STT', 'CONG DOAN', 'NGUYEN LIEU', 'LO RM', 'SO LUONG', 'THOI GIAN']],
+            startY: 85,
+            head: [['STT', 'CONG DOAN', 'NGUYEN LIEU', 'LO RM (LOT)', 'KLUONG', 'THOI GIAN']],
             body: tableData,
-            theme: 'grid', // Kẻ khung ô
-            headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-            styles: { fontSize: 9, cellPadding: 3 },
-            columnStyles: {
-                0: { cellWidth: 10 },
-                4: { fontStyle: 'bold', halign: 'right' }
-            }
+            theme: 'grid',
+            headStyles: { fillColor: [44, 62, 80], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { halign: 'center' },
+            columnStyles: { 2: { halign: 'left' } },
         });
 
-        // --- 4. KẾT QUẢ KIỂM ĐỊNH (QC) ---
+        // 6. Ghi chú & Chữ ký (Tính toán tọa độ sau khi có bảng)
         let finalY = doc.lastAutoTable.finalY + 15;
         
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("KET QUA KIEM DINH (QC REPORT)", 14, finalY);
-        
-        // Hộp trạng thái Pass/Fail
-        const isPass = (batch.pqc_status || '').toLowerCase() === 'pass';
-        doc.setFillColor(isPass ? 40 : 220, isPass ? 167 : 53, isPass ? 69 : 69); // Xanh nếu Pass, Đỏ nếu Fail
-        doc.rect(14, finalY + 4, 30, 10, 'F');
-        
-        doc.setTextColor(255);
-        doc.setFontSize(10);
-        doc.text(isPass ? "DAT (PASS)" : "LOI (FAIL)", 18, finalY + 10);
-        
-        doc.setTextColor(0);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Ghi chu: ${batch.note || 'Khong co ghi chu'}`, 50, finalY + 10);
-
-        // --- 5. CHỮ KÝ ---
-        const signY = finalY + 35;
         doc.setFont("helvetica", "italic");
-        doc.text("Nguoi Lap Phieu", 40, signY);
-        doc.text("Quan Doc Phan Xuong", 140, signY);
+        doc.setFontSize(10);
+        doc.text(`Ghi chu QC: ${batch.note || 'Khong co ghi chu dac biet.'}`, 20, finalY);
+
+        let signY = finalY + 20;
+        doc.setFont("helvetica", "bold");
+        doc.text("QUAN DOC XUONG", 40, signY, { align: "center" });
+        doc.text("KIEM SOAT CHAT LUONG", pageWidth - 60, signY, { align: "center" });
         
-        doc.setFontSize(8);
-        doc.text("(Ky va ghi ro ho ten)", 42, signY + 5);
-        doc.text("(Ky va xac nhan)", 148, signY + 5);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text("(Ky va ghi ro ho ten)", 40, signY + 5, { align: "center" });
+        doc.text("(Ky va ghi ro ho ten)", pageWidth - 60, signY + 5, { align: "center" });
 
-        // --- 6. XUẤT FILE ---
-        doc.save(`E-Batch_Report_${batch.batch_id}.pdf`);
-        window.showToast("Xuat PDF thanh cong!", "success");
+        // 7. VẼ DẤU MỘC (Đây là phần quan trọng nhất)
+        if (rawStatus === "pass") {
+            doc.setDrawColor(255, 0, 0);
+            doc.setLineWidth(0.8);
+            doc.circle(pageWidth - 60, signY + 15, 12); // Vẽ mộc tròn
+            doc.setTextColor(255, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text("QC PASS", pageWidth - 60, signY + 16, { align: "center" });
+        } 
+        else if (batch.status === "Completed" && !rawStatus) {
+            doc.setDrawColor(150);
+            doc.setLineWidth(0.5);
+            doc.circle(pageWidth - 60, signY + 15, 12);
+            doc.setTextColor(150);
+            doc.setFontSize(8);
+            doc.text("DU LIEU CU", pageWidth - 60, signY + 16, { align: "center" });
+        }
 
-    } catch (err) {
-        console.error("Lỗi PDF:", err);
-        window.showToast("Loi khi tao PDF!", "error");
+        // 8. Xuất file
+        doc.save(`MES_Report_${batch.batch_id}.pdf`);
+        window.showToast("Báo cáo đã sẵn sàng!", "success");
+
+    } catch (err) { 
+        console.error("Lỗi xuất PDF:", err);
+        window.showToast("Lỗi khi tạo báo cáo PDF!", "error"); 
     }
 };
-//HÀM HIỂN THỊ <DASHBOARD>24/02/2026</DASHBOARD>
-window.updateDashboard = function() {
-    if (!db || db.length === 0) return;
 
-    const total = db.length;
-    const completed = db.filter(b => b.status === 'Completed').length;
-    const pending = db.filter(b => b.status === 'Created' || b.status === 'Produced').length;
-
-    // Cập nhật lên giao diện
-    const totalEl = document.getElementById('dash-total');
-    const compEl = document.getElementById('dash-completed');
-    const pendEl = document.getElementById('dash-pending');
-
-    if (totalEl) totalEl.textContent = total;
-    if (compEl) compEl.textContent = completed;
-    if (pendEl) pendEl.textContent = pending;
-};
-
-// GỌI HÀM NÀY Ở ĐÂU?
-// 1. Cuối hàm loadExistingBatches (khi vừa tải xong từ server)
-// 2. Cuối hàm initBatch (khi vừa tạo lô mới)
-// 3. Cuối hàm finalizeQC (khi vừa chốt xong 1 lô)
-
-//HÀM TRA CỨU CÔNG THỨ<C>24/02/2026</C>
-//HÀM LOGIC QUÉT MÃ <QR>24/02/2026</QR>
-// Hàm mở camera để quét
-let html5QrCode;
-
+// Quét mã QR
 window.startScan = async function(targetId) {
     const confirmModal = document.getElementById('confirm-modal');
-    const btnAllow = document.getElementById('btn-allow-cam');
-    const btnCancel = document.getElementById('btn-cancel-cam');
-
-    // 1. Hiển thị Modal xác nhận
     confirmModal.style.display = 'flex';
 
-    // 2. Tạo một lời hứa (Promise) chờ người dùng phản hồi
     const userChoice = await new Promise((resolve) => {
-        btnAllow.onclick = () => {
-            confirmModal.style.display = 'none';
-            resolve(true);
-        };
-        btnCancel.onclick = () => {
-            confirmModal.style.display = 'none';
-            resolve(false);
-        };
+        document.getElementById('btn-allow-cam').onclick = () => { confirmModal.style.display = 'none'; resolve(true); };
+        document.getElementById('btn-cancel-cam').onclick = () => { confirmModal.style.display = 'none'; resolve(false); };
     });
 
-    if (!userChoice) {
-        window.showToast("Đã hủy thao tác quét mã.", "warning");
-        return;
-    }
-
-    // 3. Tiến trình mở Camera (Như cũ)
-    const cameraModal = document.getElementById('camera-modal');
-    cameraModal.style.display = 'flex';
-    
-    if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-    }
+    if (!userChoice) return;
+    document.getElementById('camera-modal').style.display = 'flex';
+    if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
     try {
         await html5QrCode.start(
             { facingMode: "environment" }, 
-            { fps: 10, qrbox: { width: 250, height: 250 } },
+            { fps: 10, qrbox: 250 },
             (decodedText) => {
                 const selectEl = document.getElementById(targetId);
                 if ([...selectEl.options].some(opt => opt.value === decodedText)) {
@@ -726,42 +491,127 @@ window.startScan = async function(targetId) {
                     window.loadBatchData(decodedText);
                     window.showToast("Nhận diện thành công!", "success");
                     window.stopScan();
-                } else {
-                    window.showToast("Mã QR không thuộc danh sách lô!", "error");
-                }
+                } else { window.showToast("Mã QR không hợp lệ!", "error"); }
             }
         );
-      } catch (err) {
-          let errorMsg = "Không thể truy cập Camera.";
-          if (err.name === 'NotAllowedError') {
-              errorMsg = "Bạn đã chặn quyền Camera. Hãy mở lại ở biểu tượng ổ khóa đầu trang!";
-          } else if (err.name === 'NotFoundError') {
-              errorMsg = "Máy tính/Điện thoại của bạn không có Camera!";
-          } else {
-              errorMsg = "Lỗi kỹ thuật: " + err.message;
-          }
-          window.showToast(errorMsg, "error");
-          window.stopScan();
-      }
+    } catch (err) { window.showToast("Lỗi camera!", "error"); window.stopScan(); }
 };
 
 window.stopScan = function() {
     if (html5QrCode) {
         html5QrCode.stop().then(() => {
-            html5QrCode.clear(); // Quan trọng: Xóa sạch trạng thái quét cũ
             document.getElementById('camera-modal').style.display = 'none';
-            console.log("Camera đã được giải phóng hoàn toàn.");
-        }).catch(err => {
-            console.warn("Camera đã đóng trước đó hoặc có lỗi giải phóng:", err);
-            document.getElementById('camera-modal').style.display = 'none';
-        });
-    } else {
-        document.getElementById('camera-modal').style.display = 'none';
+        }).catch(() => { document.getElementById('camera-modal').style.display = 'none'; });
     }
 };
-// Đảm bảo khởi chạy mọi thứ khi trang web sẵn sàng
-window.addEventListener('DOMContentLoaded', () => {
-    window.loadFromLocal();         // 1. Lấy dữ liệu nháp từ máy
-    window.loadExistingBatches();   // 2. Đồng bộ dữ liệu lô từ Cloud
-    window.loadBOMFromServer();      // 3. Tải định mức từ Cloud
+
+// Hỗ trợ UI: Table, Dashboard, Badge
+window.addRow = function(target) {
+    const tbody = document.getElementById(target);
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><select class="c-step"><option value="Cân">⚖️ Cân</option><option value="Trộn">🌀 Trộn</option><option value="Chiết rót">🧪 Chiết rót</option></select></td>
+        <td><input type="text" class="c-rm" placeholder="Tên NVL"></td>
+        <td><input type="text" class="c-lot" placeholder="Lô RM"></td>
+        <td style="display: flex; gap: 5px;"><input type="number" class="c-out" style="width: 70px;"><select class="c-unit"><option value="Kg">Kg</option><option value="Gam">g</option></select></td>
+        <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>`;
+    tbody.appendChild(row);
+};
+
+window.addRowWithData = function(target, log) {
+    const tbody = document.getElementById(target);
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><select class="c-step"><option value="Cân" ${log.process === 'Cân' ? 'selected' : ''}>⚖️ Cân</option></select></td>
+        <td><input type="text" class="c-rm" value="${log.ingridient || ''}"></td>
+        <td><input type="text" class="c-lot" value="${log.rm_batch_id || ''}"></td>
+        <td style="display: flex; gap: 5px;"><input type="number" class="c-out" value="${log.input || ''}"><select class="c-unit"><option value="Kg">Kg</option></select></td>
+        <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>`;
+    tbody.appendChild(row);
+};
+
+window.updateBatchSelector = function() {
+    const optionsHtml = window.db.map(batch => `<option value="${batch.batch_id}">${batch.batch_id} - ${batch.sku_id} [${batch.status}]</option>`).join('');
+    const defaultOption = '<option value="">-- CHỌN MÃ LÔ --</option>';
+    ['activeBatches', 'qcBatchSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = defaultOption + optionsHtml;
+    });
+};
+
+window.updateDashboard = function() {
+    if (!window.db) return;
+    document.getElementById('dash-total').textContent = window.db.length;
+    document.getElementById('dash-completed').textContent = window.db.filter(b => b.status === 'Completed').length;
+    document.getElementById('dash-pending').textContent = window.db.filter(b => b.status !== 'Completed').length;
+};
+
+window.updateBadgeStatus = function(batch) {
+    document.querySelectorAll('.badge').forEach(b => b.classList.remove('active'));
+    if (batch.status === 'Created') document.getElementById('badge-supervisor')?.classList.add('active');
+    else if (batch.status === 'Produced') document.getElementById('badge-operator')?.classList.add('active');
+    else if (batch.status === 'Completed') document.getElementById('badge-qc')?.classList.add('active');
+    window.controlSections(batch.status);
+};
+
+window.controlSections = function(status) {
+    const sec2 = document.querySelector('.section-2');
+    const sec3 = document.querySelector('.section-3');
+    
+    // Reset lại trạng thái trước khi áp dụng logic mới
+    [sec2, sec3].forEach(s => {
+        s.style.opacity = "1";
+        s.style.pointerEvents = "all";
+        s.querySelectorAll('input, select, button').forEach(i => i.disabled = false);
+    });
+
+    if (status === 'Created') { 
+        // Lô mới tạo: Chỉ cho làm ở Section 2, khóa Section 3
+        sec3.style.opacity = "0.4"; 
+        sec3.style.pointerEvents = "none"; 
+    } 
+    else if (status === 'Produced') { 
+        // Lô đã sản xuất: Mở cả 2 để QC kiểm tra
+        sec2.style.opacity = "1"; 
+        sec3.style.opacity = "1"; 
+    } 
+    else if (status === 'Completed') { 
+        // Lô đã đóng hồ sơ: KHÓA TOÀN BỘ để bảo mật dữ liệu
+        [sec2, sec3].forEach(s => { 
+            s.style.opacity = "0.6"; 
+            s.querySelectorAll('input, select, button').forEach(i => {
+                if(!i.classList.contains('btn-icon')) i.disabled = true; 
+            });
+        });
+        window.showToast("Hồ sơ này đã đóng, không thể chỉnh sửa.", "info");
+    }
+};
+
+window.showToast = function(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.animation = "slideIn 0.4s reverse forwards"; setTimeout(() => toast.remove(), 400); }, 4000);
+};
+
+/* ==========================================================================
+   BLOCK 6: KHỞI CHẠY (INITIALIZE)
+   ========================================================================== */
+window.addEventListener('DOMContentLoaded', async () => {
+    console.log("🚀 MES PRO đang khởi động...");
+    
+    // 1. Tải dữ liệu từ bộ nhớ tạm
+    window.loadFromLocal();
+    
+    // 2. Tải danh sách lô từ Server
+    await window.loadExistingBatches();
+    
+    // 3. Tải danh sách Công thức (BOM)
+    // Hàm này sẽ lấy các mã sản phẩm (sku_id) đổ vào dropdown
+    await window.loadBOMFromServer();
+    
+    console.log("✅ Hệ thống đã sẵn sàng.");
 });

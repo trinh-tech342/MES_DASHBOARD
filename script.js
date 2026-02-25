@@ -223,8 +223,6 @@ window.applyBOMToTable = function() {
             <td><input type="text" class="c-rm" value="${item.name}" readonly></td>
             <td><input type="text" class="c-lot" placeholder="NHẬP LÔ NL..."></td>
             <td>
-            // Thay thế đoạn input sản lượng trong row.innerHTML:
-            <td>
                 <div style="display:flex; gap:5px; align-items:center;">
                     <input type="number" 
                            class="c-out" 

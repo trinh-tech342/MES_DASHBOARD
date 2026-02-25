@@ -2,7 +2,7 @@
    BLOCK 0: CẤU HÌNH HỆ THỐNG (BỎ SKU KHI KHỞI TẠO)
    ========================================================================== */
 window.db = window.db || [];
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxe8p8v8ONI_fhVJu3xQ0i9-1RAYoj1YAtomugQ98ekcpZp1Ujn7wl1ewHc8hW2zCNH4Q/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2NIYJGSLO3k_FbgkZfUEsbNFeHnUsDNEt8OBRHgelFRyGgi6q6vRNLJJa7rdxHcv0Zw/exec";
 const API_SECRET_TOKEN = "MES_PRO_SECRET_2026"; 
 let GLOBAL_BOM = {}; 
 let html5QrCode;
@@ -354,7 +354,12 @@ window.exportBatchPDF = function() {
 
     const batch = (window.db || []).find(b => String(b.batch_id) === String(searchId));
     if (!batch) return window.showToast("Không tìm thấy mã lô để xuất báo cáo!", "error");
-
+    // KIỂM TRA: Nếu lô có trong DB nhưng outputLogs trống, hãy báo nhắc người dùng
+    if (!batch.outputLogs || batch.outputLogs.length === 0) {
+        window.showToast("Cảnh báo: Lô này chưa có nhật ký sản xuất được lưu!", "warning");
+        // Bạn có thể giữ lại lệnh return nếu muốn chặn xuất PDF trống
+        // return; 
+    }
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();

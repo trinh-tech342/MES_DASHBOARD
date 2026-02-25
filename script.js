@@ -4,6 +4,13 @@
 window.db = window.db || [];
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2NIYJGSLO3k_FbgkZfUEsbNFeHnUsDNEt8OBRHgelFRyGgi6q6vRNLJJa7rdxHcv0Zw/exec";
 const API_SECRET_TOKEN = "MES_PRO_SECRET_2026"; 
+// Hàm chuyển tiếng Việt có dấu thành không dấu
+const vniSafe = (str) => {
+    if (!str) return "";
+    return str.normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+};
 let GLOBAL_BOM = {}; 
 let html5QrCode;
 
@@ -375,12 +382,12 @@ window.exportBatchPDF = function() {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(18);
         doc.setTextColor(44, 62, 80);
-        doc.text("MES PRO MANUFACTURING SYSTEM", pageWidth / 2, 20, { align: "center" });
+        doc.text("NGOCDUY TEA Ltd. MANUFACTURING SYSTEM", pageWidth / 2, 20, { align: "center" });
         
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.setFont("helvetica", "normal");
-        doc.text("Dia chi: Khu Cong Nghiep Cao, TP. Thu Duc, Viet Nam", pageWidth / 2, 26, { align: "center" });
+        doc.text("Dia chi: 73/17 Phan Chu Trinh, P.Lam Vien - Da Lat, Lam Dong, Viet Nam", pageWidth / 2, 26, { align: "center" });
         doc.line(20, 30, pageWidth - 20, 30);
 
         // 3. Tên Báo Cáo
@@ -422,22 +429,23 @@ window.exportBatchPDF = function() {
 
             return [
                 index + 1, 
-                log.process || '-', 
-                log.ingridient || '-', 
+                vniSafe(log.process || '-'),      // Khử dấu "Đóng gói" -> "Dong goi"
+                vniSafe(log.ingridient || '-'),   // Khử dấu tên nguyên liệu
                 log.rm_batch_id || '-', 
-                `${log.input || '0'} ${unit}`, // Ghép số lượng với đơn vị tương ứng
+                `${log.input || '0'} ${unit}`, // KHỐI LƯỢNG ĐỊNH MỨC
+                "",                      // CỘT MỚI: KHỐI LƯỢNG THỰC TẾ (Để trống)
                 log.timestamp ? log.timestamp.split(',')[0] : '-'
             ];
         });
 
         doc.autoTable({
             startY: 85,
-            head: [['STT', 'CONG DOAN', 'NGUYEN LIEU', 'LO RM (LOT)', 'KLUONG', 'THOI GIAN']],
+            head: [['STT', 'CONG DOAN', 'NGUYEN LIEU', 'LO RM (LOT)', 'KLUONG','KLG THUC TE', 'THOI GIAN']],
             body: tableData,
             theme: 'grid',
-            headStyles: { fillColor: [44, 62, 80], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+            headStyles: { fillColor: [44, 62, 80], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center',fontSize: 9}, // Giảm nhẹ font size để vừa với cột mới 
             bodyStyles: { halign: 'center' },
-            columnStyles: { 2: { halign: 'left' } },
+            columnStyles: { 2: { halign: 'left' }, 5: { cellWidth: 30 }},     // Ưu tiên độ rộng cho cột thực tế để dễ viết tay 
         });
 
         // 6. Ghi chú & Chữ ký (Tính toán tọa độ sau khi có bảng)
@@ -650,6 +658,25 @@ window.updateUnit = function(selectElement) {
     } else {
         unitLabel.innerText = "kg"; // Mặc định cho Cân và Trộn
     }
+};
+//HÀM KHỬ DẤU CHO XUẤT PDF
+window.removeVietnameseTones = function(str) {
+    if (!str) return "";
+    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+    str = str.replace(/đ/g, "d");
+    str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+    str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+    str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+    str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+    str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+    str = str.replace(/Ỳ|Ý|Y|Ỷ|Ỹ/g, "Y");
+    str = str.replace(/Đ/g, "D");
+    return str;
 };
 /* ==========================================================================
    BLOCK 6: KHỞI CHẠY (INITIALIZE)

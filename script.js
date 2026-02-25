@@ -214,11 +214,13 @@ window.applyBOMToTable = function() {
         // Tìm đoạn row.innerHTML trong hàm applyBOMToTable và thay bằng:
         row.innerHTML = `
             <td>
-                <select class="c-step">
-                    <option value="${item.process || 'Cân'}">${item.process || 'Cân'}</option>
-                    <option value="Trộn">Trộn</option>
-                    <option value="Chiết">Chiết</option>
-                </select>
+              <select class="c-step" style="width:100%">
+                  <option value="${item.process || 'Cân'}" selected>⚖️ ${item.process || 'Cân'}</option>
+                  <option value="Trộn">🌀 Trộn</option>
+                  <option value="Chiết rót">🧪 Chiết rót</option>
+                  <option value="Đóng gói">📦 Đóng gói</option>
+                  <option value="Dán nhãn">🏷️ Dán nhãn</option>
+              </select>
             </td>
             <td><input type="text" class="c-rm" value="${item.name}" readonly></td>
             <td><input type="text" class="c-lot" placeholder="NHẬP LÔ NL..."></td>
@@ -399,14 +401,29 @@ window.exportBatchPDF = function() {
         doc.text(`Ket Qua QC: ${qcResultDisplay}`, 130, 79);
 
         // 5. Bảng Nhật Ký Sản Xuất
-        const tableData = (batch.outputLogs || []).map((log, index) => [
-            index + 1, 
-            log.process || '-', 
-            log.ingridient || '-', 
-            log.rm_batch_id || '-', 
-            `${log.input || '0'} kg`, 
-            log.timestamp ? log.timestamp.split(',')[0] : '-'
-        ]);
+// 5. Bảng Nhật Ký Sản Xuất (Cập nhật logic đơn vị động)
+        const tableData = (batch.outputLogs || []).map((log, index) => {
+            // Xác định đơn vị dựa trên công đoạn
+            let unit = "kg"; 
+            const process = log.process ? log.process.trim() : "";
+
+            if (process === "Đóng gói") {
+                unit = "bao/thùng";
+            } else if (process === "Dán nhãn") {
+                unit = "tem";
+            } else if (process === "Chiết rót") {
+                unit = "chai/túi";
+            }
+
+            return [
+                index + 1, 
+                log.process || '-', 
+                log.ingridient || '-', 
+                log.rm_batch_id || '-', 
+                `${log.input || '0'} ${unit}`, // Ghép số lượng với đơn vị tương ứng
+                log.timestamp ? log.timestamp.split(',')[0] : '-'
+            ];
+        });
 
         doc.autoTable({
             startY: 85,
@@ -504,15 +521,31 @@ window.stopScan = function() {
 };
 
 // Hỗ trợ UI: Table, Dashboard, Badge
-window.addRow = function(target) {
-    const tbody = document.getElementById(target);
+window.addRow = function() {
+    const tbody = document.getElementById('outputBody');
     const row = document.createElement('tr');
+    
+    // Ở đây chúng ta để giá trị cố định là "Cân", không dùng biến ${item...}
     row.innerHTML = `
-        <td><select class="c-step"><option value="Cân">⚖️ Cân</option><option value="Trộn">🌀 Trộn</option><option value="Chiết rót">🧪 Chiết rót</option></select></td>
-        <td><input type="text" class="c-rm" placeholder="Tên NVL"></td>
-        <td><input type="text" class="c-lot" placeholder="Lô RM"></td>
-        <td style="display: flex; gap: 5px;"><input type="number" class="c-out" style="width: 70px;"><select class="c-unit"><option value="Kg">Kg</option><option value="Gam">g</option></select></td>
-        <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>`;
+        <td>
+            <select class="c-step" style="width:100%" onchange="updateUnit(this)">
+                <option value="Cân" selected>⚖️ Cân</option>
+                <option value="Trộn">🌀 Trộn</option>
+                <option value="Chiết rót">🧪 Chiết rót</option>
+                <option value="Đóng gói">📦 Đóng gói</option>
+                <option value="Dán nhãn">🏷️ Dán nhãn</option>
+            </select>
+        </td>
+        <td><input type="text" class="c-rm" placeholder="Tên nguyên liệu..."></td>
+        <td><input type="text" class="c-lot" placeholder="NHẬP LÔ NL..."></td>
+        <td>
+            <div style="display:flex; gap:5px; align-items:center;">
+                <input type="number" class="c-out" value="0" step="0.01" style="width:90px">
+                <span class="c-unit-label" style="color: #FFD700; font-weight: bold;">kg</span>
+            </div>
+        </td>
+        <td><button onclick="this.closest('tr').remove()" class="btn-delete">✕</button></td>
+    `;
     tbody.appendChild(row);
 };
 
@@ -595,6 +628,24 @@ window.showToast = function(message, type = 'success') {
     setTimeout(() => { toast.style.animation = "slideIn 0.4s reverse forwards"; setTimeout(() => toast.remove(), 400); }, 4000);
 };
 
+window.updateUnit = function(selectElement) {
+    // Tìm đến hàng (tr) chứa cái select này
+    const row = selectElement.closest('tr');
+    // Tìm nhãn đơn vị trong hàng đó
+    const unitLabel = row.querySelector('.c-unit-label');
+    const selectedValue = selectElement.value;
+
+    // Logic đổi tên đơn vị
+    if (selectedValue === "Đóng gói") {
+        unitLabel.innerText = "bao/thùng";
+    } else if (selectedValue === "Dán nhãn") {
+        unitLabel.innerText = "tem";
+    } else if (selectedValue === "Chiết rót") {
+        unitLabel.innerText = "chai/túi";
+    } else {
+        unitLabel.innerText = "kg"; // Mặc định cho Cân và Trộn
+    }
+};
 /* ==========================================================================
    BLOCK 6: KHỞI CHẠY (INITIALIZE)
    ========================================================================== */

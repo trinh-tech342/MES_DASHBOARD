@@ -98,6 +98,7 @@ window.applyBOMToTable = function() {
               <select class="c-step" style="width:100%">
                   <option value="${item.process || 'Cân'}" selected>⚖️ ${item.process || 'Cân'}</option>
                   <option value="Trộn">🌀 Trộn</option>
+                  <option value="Sấy">♨️ Sấy</option>
                   <option value="Chiết rót">🧪 Chiết rót</option>
                   <option value="Đóng gói">📦 Đóng gói</option>
                   <option value="Dán nhãn">🏷️ Dán nhãn</option>
@@ -224,6 +225,7 @@ window.applyBOMToTable = function() {
               <select class="c-step" style="width:100%">
                   <option value="${item.process || 'Cân'}" selected>⚖️ ${item.process || 'Cân'}</option>
                   <option value="Trộn">🌀 Trộn</option>
+                  <option value="Sấy">♨️ Sấy</option>
                   <option value="Chiết rót">🧪 Chiết rót</option>
                   <option value="Đóng gói">📦 Đóng gói</option>
                   <option value="Dán nhãn">🏷️ Dán nhãn</option>
@@ -544,6 +546,7 @@ window.addRow = function() {
             <select class="c-step" style="width:100%" onchange="updateUnit(this)">
                 <option value="Cân" selected>⚖️ Cân</option>
                 <option value="Trộn">🌀 Trộn</option>
+                <option value="Sấy">♨️ Sấy</option>
                 <option value="Chiết rót">🧪 Chiết rót</option>
                 <option value="Đóng gói">📦 Đóng gói</option>
                 <option value="Dán nhãn">🏷️ Dán nhãn</option>
